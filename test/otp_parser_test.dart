@@ -10,13 +10,14 @@ void main() {
       expect(
         SmsConfig.otpMessage('1234'),
         'Use OTP 1234 to log in to your Salary Brother account. This code '
-        'will expire in 5 minutes. Keep it safe. SYFLSB',
+        'will expire in 5 minutes. Keep it safe. SYFNSB',
       );
     });
 
     test('carries the sender ID and a 5-minute validity', () {
-      expect(SmsConfig.senderId, 'SYFLSB');
-      expect(SmsConfig.otpTemplateId, '1777178863021936003');
+      expect(SmsConfig.senderId, 'SYFNSB');
+      expect(SmsConfig.otpTemplateId, '1777178866858679772');
+      expect(SmsConfig.peId, '1701178833315739006');
       expect(SmsConfig.otpValidity, const Duration(minutes: 5));
       expect(SmsConfig.otpTemplate, contains(SmsConfig.senderId));
     });
@@ -30,8 +31,8 @@ void main() {
 
     test('survives the prefixes carriers add', () {
       const body =
-          'AD-SYFLSB: Use OTP 4821 to log in to your Salary Brother account. '
-          'This code will expire in 5 minutes. Keep it safe. SYFLSB';
+          'AD-SYFNSB: Use OTP 4821 to log in to your Salary Brother account. '
+          'This code will expire in 5 minutes. Keep it safe. SYFNSB';
 
       expect(OtpParser.extract(body), '4821');
     });
@@ -52,13 +53,13 @@ void main() {
     });
 
     test('ignores a message from us that carries no code', () {
-      const promo = 'Your Salary Brother loan is approved. SYFLSB';
+      const promo = 'Your Salary Brother loan is approved. SYFNSB';
 
       expect(OtpParser.extract(promo), isNull);
     });
 
     test('handles a reworded body that still names the code', () {
-      const reworded = 'SYFLSB Your code is 3344. Do not share it.';
+      const reworded = 'SYFNSB Your code is 3344. Do not share it.';
 
       expect(OtpParser.extract(reworded), '3344');
     });
@@ -70,7 +71,7 @@ void main() {
     });
 
     test('does not return a code of the wrong length', () {
-      const sixDigits = 'SYFLSB Use OTP 123456 to log in to your account.';
+      const sixDigits = 'SYFNSB Use OTP 123456 to log in to your account.';
 
       // The CRM issues 4-digit codes; a 6-digit one is not ours.
       expect(OtpParser.extract(sixDigits), isNull);

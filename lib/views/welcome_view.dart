@@ -18,47 +18,41 @@ class WelcomeView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        // Scrolls rather than overflows: on a short phone, or at a large
-        // system text scale, this content is taller than the screen.
-        child: LayoutBuilder(
-          builder: (context, constraints) => SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(
-              AppSizes.screenPadding,
-              AppSizes.screenPadding,
-              AppSizes.screenPadding,
-              22,
-            ),
-            child: ConstrainedBox(
-              constraints:
-                  BoxConstraints(minHeight: constraints.maxHeight - 42),
-              child: IntrinsicHeight(
-                child: Column(
-                  children: [
-                    const _WelcomeHeader(),
-                    const SizedBox(height: 18),
-                    // Flexible, not Expanded: the hero takes the slack on a
-                    // tall screen but can shrink to its content on a short
-                    // one instead of being forced to a negative height.
-                    const Flexible(child: _Hero()),
-                    const SizedBox(height: 18),
-                    const _TrustRow(),
-                    const SizedBox(height: 18),
-                    PrimaryButton(
-                      label: 'Get started',
-                      onPressed: () => Get.toNamed(RouteNames.login),
-                    ),
-                    const SizedBox(height: AppSizes.m),
-                    _loginPrompt(),
-                    const SizedBox(height: AppSizes.m),
-                    const Text(
-                      BrandConfig.lenderDisclosure,
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.legal,
-                    ),
-                  ],
-                ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSizes.screenPadding,
+            AppSizes.screenPadding,
+            AppSizes.screenPadding,
+            22,
+          ),
+          // No scroll view: the hero absorbs whatever height is left over, so
+          // the screen always fits exactly once and never scrolls.
+          child: Column(
+            children: [
+              const _WelcomeHeader(),
+              const SizedBox(height: AppSizes.l),
+              const Expanded(child: _Hero()),
+              const SizedBox(height: AppSizes.l),
+              const _TrustRow(),
+              const SizedBox(height: AppSizes.l),
+              PrimaryButton(
+                label: 'Get started',
+                onPressed: () => Get.toNamed(RouteNames.login),
               ),
-            ),
+              const SizedBox(height: AppSizes.s),
+              _loginPrompt(),
+              const SizedBox(height: AppSizes.s),
+              // Capped: on a short screen the disclosure would otherwise
+              // take height the hero needs. It is reachable in full from the
+              // privacy policy.
+              const Text(
+                BrandConfig.lenderDisclosure,
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.legal,
+              ),
+            ],
           ),
         ),
       ),
@@ -126,8 +120,10 @@ class _Hero extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Flexible(child: _FloatingCards()),
-          const SizedBox(height: AppSizes.l),
+          // Takes the slack on a tall screen and gives it back on a short
+          // one; _FloatingCards scales itself to whatever it is handed.
+          const Expanded(child: _FloatingCards()),
+          const SizedBox(height: AppSizes.m),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
@@ -137,19 +133,27 @@ class _Hero extends StatelessWidget {
             child: const Text('SALARY ADVANCE', style: AppTextStyles.pill),
           ),
           const SizedBox(height: AppSizes.m),
-          Text(
-            'Your salary, a little early.',
-            // h1 is near-black for light surfaces; on the plum hero it has to
-            // be white or it reads at about 2:1 contrast.
-            style: AppTextStyles.h1.copyWith(color: AppColors.white),
-            maxLines: 2,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Your salary, a little early.',
+              // h1 is near-black for light surfaces; on the plum hero it has
+              // to be white or it reads at about 2:1 contrast.
+              style: AppTextStyles.h1.copyWith(color: AppColors.white),
+              maxLines: 2,
+            ),
           ),
-          const SizedBox(height: AppSizes.m),
-          Text(
-            'Short-term loans for salaried India. 100% digital — '
-            'no paperwork, no collateral.',
-            style: AppTextStyles.body.copyWith(
-              color: AppColors.onPrimaryMuted,
+          const SizedBox(height: AppSizes.s),
+          Flexible(
+            child: Text(
+              'Short-term loans for salaried India. 100% digital — '
+              'no paperwork, no collateral.',
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.body.copyWith(
+                color: AppColors.onPrimaryMuted,
+              ),
             ),
           ),
         ],
@@ -165,21 +169,38 @@ class _Hero extends StatelessWidget {
 class _FloatingCards extends StatelessWidget {
   const _FloatingCards();
 
-  /// Enough for the receipt plus the chip hanging off its lower right. The
-  /// hero shrinks this on a short screen rather than letting it collide.
+  /// Enough for the receipt plus the chip hanging off its lower right.
   static const double _height = 212;
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(
-      height: _height,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned(top: 0, left: 0, child: _CreditedCard()),
-          Positioned(bottom: 0, right: 0, child: _SalaryDayChip()),
-        ],
-      ),
+    // The hero has no scroll view, so on a short screen this zone is handed
+    // less than it wants. Scale down to fit rather than overflow.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final available = constraints.maxHeight;
+        final scale =
+            available.isFinite && available < _height ? available / _height : 1.0;
+
+        return SizedBox(
+          height: _height * scale,
+          child: const FittedBox(
+            fit: BoxFit.contain,
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              height: _height,
+              width: 330,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned(top: 0, left: 0, child: _CreditedCard()),
+                  Positioned(bottom: 0, right: 0, child: _SalaryDayChip()),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

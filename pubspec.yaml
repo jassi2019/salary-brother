@@ -31,7 +31,11 @@ dependencies:
   # ui helpers
   responsive_sizer: ^3.1.1
   fluttertoast: ^8.2.5
-  pin_code_fields: ^8.0.1
+  # pinput + smart_auth give OTP auto-fill via Android's SMS User Consent
+  # API, which works with any message format — unlike the SMS Retriever
+  # API, which needs an 11-char app hash baked into the message.
+  pinput: ^5.0.0
+  smart_auth: ^2.0.0
   another_stepper: ^1.2.2
   simple_circular_progress_bar: ^1.0.2
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:pin_code_fields/pin_code_fields.dart';
+import 'package:pinput/pinput.dart';
+import 'package:smart_auth/smart_auth.dart';
 
 import '../controllers/auth_controller.dart';
 import '../routes/route_names.dart';
@@ -9,12 +10,37 @@ import '../utils/app_colors.dart';
 import '../utils/app_sizes.dart';
 import '../utils/app_text_styles.dart';
 import '../utils/formatters.dart';
+import '../utils/sms_retriever_impl.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/square_icon_button.dart';
 
-/// Screen 02b of the design canvas — the 6-digit OTP boxes.
-class OtpView extends GetView<AuthController> {
+/// Screen 02b of the design canvas — the OTP boxes.
+class OtpView extends StatefulWidget {
   const OtpView({super.key});
+
+  @override
+  State<OtpView> createState() => _OtpViewState();
+}
+
+class _OtpViewState extends State<OtpView> {
+  AuthController get controller => Get.find<AuthController>();
+
+  late final SmsRetrieverImpl _smsRetriever;
+
+  @override
+  void initState() {
+    super.initState();
+    _smsRetriever = SmsRetrieverImpl(SmartAuth());
+    // Pinput drives the listener; this only tells the UI it may promise
+    // auto-fill.
+    controller.isAutoReadingSms.value = true;
+  }
+
+  @override
+  void dispose() {
+    controller.isAutoReadingSms.value = false;
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,8 +108,13 @@ class OtpView extends GetView<AuthController> {
   }
 
   Widget _otpHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    // Wrap, not Row: the label and the auto-read chip together are wider
+    // than a narrow screen once the chip is showing.
+    return Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: AppSizes.s,
+      runSpacing: AppSizes.xs,
       children: [
         const Text(
           'Enter ${AuthController.otpLength}-digit OTP',
@@ -93,6 +124,7 @@ class OtpView extends GetView<AuthController> {
         Obx(
           () => controller.isAutoReadingSms.value
               ? Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
                       width: 8,
@@ -127,33 +159,66 @@ class OtpView extends GetView<AuthController> {
   }
 
   Widget _otpFields() {
-    return PinCodeTextField(
-      appContext: Get.context!,
-      length: AuthController.otpLength,
-      controller: controller.otpController,
-      keyboardType: TextInputType.number,
-      autoFocus: true,
-      enableActiveFill: true,
-      animationType: AnimationType.fade,
-      animationDuration: const Duration(milliseconds: 150),
+    return LayoutBuilder(
+      builder: (context, constraints) => _pinput(_boxWidth(constraints)),
+    );
+  }
+
+  Widget _pinput(double boxWidth) {
+    final base = PinTheme(
+      width: boxWidth,
+      height: AppSizes.otpBoxHeight,
       textStyle: AppTextStyles.otpDigit,
-      // Keeps the Verify button in sync with what has been typed.
-      onChanged: (_) => controller.isVerifying.refresh(),
-      onCompleted: (_) => controller.verifyOtp(),
-      pinTheme: PinTheme(
-        shape: PinCodeFieldShape.box,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppSizes.radiusOtpBox),
-        fieldHeight: AppSizes.otpBoxHeight,
-        fieldWidth: 60,
-        borderWidth: 1.5,
-        activeColor: AppColors.primary,
-        selectedColor: AppColors.primary,
-        inactiveColor: AppColors.border,
-        activeFillColor: AppColors.white,
-        selectedFillColor: AppColors.white,
-        inactiveFillColor: AppColors.surface,
+        border: Border.all(color: AppColors.border, width: 1.5),
       ),
     );
+
+    return Pinput(
+      length: AuthController.otpLength,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      controller: controller.otpController,
+      keyboardType: TextInputType.number,
+      autofocus: true,
+      // Fills the boxes from the incoming SMS via the User Consent API.
+      smsRetriever: _smsRetriever,
+      defaultPinTheme: base,
+      focusedPinTheme: base.copyWith(
+        decoration: base.decoration!.copyWith(
+          color: AppColors.white,
+          border: Border.all(color: AppColors.primary, width: 2),
+        ),
+      ),
+      submittedPinTheme: base.copyWith(
+        decoration: base.decoration!.copyWith(
+          color: AppColors.white,
+          border: Border.all(color: AppColors.primary, width: 1.5),
+        ),
+      ),
+      // Keeps the Verify button in sync with what has been typed.
+      onChanged: (_) => controller.isVerifying.refresh(),
+      // Submits as soon as the code is complete, typed or auto-filled, so
+      // nobody has to press Verify themselves.
+      onCompleted: (_) => controller.verifyOtp(),
+    );
+  }
+
+  /// Box width that fits [AuthController.otpLength] boxes plus their gaps in
+  /// the width actually available, capped so they are not stretched wide on
+  /// a tablet.
+  double _boxWidth(BoxConstraints constraints) {
+    const gap = 12.0;
+    const maxWidth = 64.0;
+    const minWidth = 36.0;
+
+    if (!constraints.hasBoundedWidth) return maxWidth;
+
+    final usable =
+        constraints.maxWidth - (gap * (AuthController.otpLength - 1));
+
+    return (usable / AuthController.otpLength).clamp(minWidth, maxWidth);
   }
 
   Widget _resendRow() {

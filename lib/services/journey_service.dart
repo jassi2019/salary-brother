@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../routes/app_pages.dart';
 import '../routes/route_names.dart';
 import 'api/api_events.dart';
 import 'api/api_result.dart';
@@ -54,6 +55,15 @@ class JourneyService {
       return;
     }
 
+    // A step whose screen is not built yet maps to a route GetX cannot
+    // resolve, and Get.offAllNamed on an unregistered name does nothing —
+    // leaving the customer staring at the screen they just finished. Send
+    // them to the dashboard instead, so the journey always moves.
+    if (!isRegistered(route)) {
+      Get.offAllNamed(RouteNames.dashboard);
+      return;
+    }
+
     if (route == RouteNames.documents) {
       Get.offAllNamed(
         route,
@@ -64,6 +74,10 @@ class JourneyService {
 
     Get.offAllNamed(route);
   }
+
+  /// Whether [route] has a page registered for it.
+  static bool isRegistered(String route) =>
+      AppPages.routes.any((page) => page.name == route);
 
   /// Opens the screen for the step stored from the last response. Used on
   /// launch to resume a half-finished application.

@@ -19,12 +19,14 @@
 class SmsConfig {
   SmsConfig._();
 
-  /// DLT-registered sender ID. Also the suffix the gateway appends to every
-  /// message body.
-  static const String senderId = 'SYFLSB';
+  /// DLT-registered sender ID, as it appears at the end of every message.
+  static const String senderId = 'SYFNSB';
 
   /// DLT template id registered for the login OTP.
-  static const String otpTemplateId = '1777178863021936003';
+  static const String otpTemplateId = '1777178866858679772';
+
+  /// Principal Entity ID on the DLT portal.
+  static const String peId = '1701178833315739006';
 
   /// The registered template, with `{otp}` where the code goes. Any change to
   /// the wording needs re-approval on the DLT portal before it will deliver.
