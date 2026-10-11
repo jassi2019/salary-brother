@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../routes/route_names.dart';
@@ -13,6 +15,16 @@ class SplashController extends GetxController {
 
   Future<void> _route() async {
     await Future<void>.delayed(const Duration(milliseconds: 1600));
+
+    // Leaving the plum splash: the rest of the app is light, so the status
+    // bar icons go back to dark.
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
+    );
 
     if (!StorageService.isLoggedIn) {
       Get.offAllNamed(

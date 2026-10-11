@@ -12,10 +12,13 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await StorageService.init();
 
+  // The splash is plum, so its status bar icons must be light. SplashView
+  // restores the dark ones when it hands off to the rest of the app.
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
     ),
   );
 

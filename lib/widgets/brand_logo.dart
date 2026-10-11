@@ -1,37 +1,45 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
+import '../utils/app_assets.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_text_styles.dart';
 
-/// The hexagon "SB" mark plus the stacked SALARY / BROTHER wordmark.
+/// The Salary Brother mark — the interlocked SB monogram — with an optional
+/// stacked SALARY / BROTHER wordmark beside it.
 class BrandLogo extends StatelessWidget {
-  const BrandLogo({super.key, this.size = 40, this.showWordmark = true});
+  const BrandLogo({
+    super.key,
+    this.size = 40,
+    this.showWordmark = true,
+    this.onPlum = false,
+  });
 
   final double size;
   final bool showWordmark;
 
+  /// True when the logo sits on a plum surface: the mark is drawn white and
+  /// loses its tile, rather than putting plum on plum.
+  final bool onPlum;
+
   @override
   Widget build(BuildContext context) {
-    final mark = SizedBox(
-      width: size,
-      height: size,
-      child: CustomPaint(
-        painter: _HexMarkPainter(),
-        child: Center(
-          child: Text(
-            'SB',
-            style: TextStyle(
-              fontFamily: AppTextStyles.fontHeading,
-              fontSize: size * 0.31,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
+    final mark = onPlum
+        ? Image.asset(
+            AppAssets.logoMark,
+            width: size,
+            height: size,
+            fit: BoxFit.contain,
+          )
+        : Container(
+            width: size,
+            height: size,
+            padding: EdgeInsets.all(size * 0.17),
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(size * 0.26),
             ),
-          ),
-        ),
-      ),
-    );
+            child: Image.asset(AppAssets.logoMark, fit: BoxFit.contain),
+          );
 
     if (!showWordmark) return mark;
 
@@ -40,70 +48,46 @@ class BrandLogo extends StatelessWidget {
       children: [
         mark,
         const SizedBox(width: 10),
-        const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'SALARY',
-              style: TextStyle(
-                fontFamily: AppTextStyles.fontHeading,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.4,
-                height: 1.1,
-                color: AppColors.primary,
-              ),
-            ),
-            Text(
-              'BROTHER',
-              style: TextStyle(
-                fontFamily: AppTextStyles.fontHeading,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.4,
-                height: 1.1,
-                color: AppColors.brandMuted,
-              ),
-            ),
-          ],
-        ),
+        _Wordmark(onPlum: onPlum),
       ],
     );
   }
 }
 
-class _HexMarkPainter extends CustomPainter {
+class _Wordmark extends StatelessWidget {
+  const _Wordmark({required this.onPlum});
+
+  final bool onPlum;
+
   @override
-  void paint(Canvas canvas, Size size) {
-    final path = Path();
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 2;
-
-    for (var i = 0; i < 6; i++) {
-      final angle = (i * 60 - 90) * math.pi / 180;
-      final point = Offset(
-        center.dx + radius * 0.866 * math.cos(angle),
-        center.dy + radius * math.sin(angle),
-      );
-      i == 0 ? path.moveTo(point.dx, point.dy) : path.lineTo(point.dx, point.dy);
-    }
-    path.close();
-
-    canvas.drawPath(
-      path,
-      Paint()..color = AppColors.primary..style = PaintingStyle.fill,
-    );
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = AppColors.primary
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 4
-        ..strokeJoin = StrokeJoin.round,
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'SALARY',
+          style: TextStyle(
+            fontFamily: AppTextStyles.fontHeading,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.4,
+            height: 1.1,
+            color: onPlum ? Colors.white : AppColors.primary,
+          ),
+        ),
+        Text(
+          'BROTHER',
+          style: TextStyle(
+            fontFamily: AppTextStyles.fontHeading,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.4,
+            height: 1.1,
+            color: onPlum ? AppColors.tint : AppColors.brandMuted,
+          ),
+        ),
+      ],
     );
   }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

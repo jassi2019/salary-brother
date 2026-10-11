@@ -16,8 +16,8 @@ class SplashView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const BrandLogo(size: 84, showWordmark: false),
-            const SizedBox(height: 24),
+            const BrandLogo(size: 110, showWordmark: false, onPlum: true),
+            const SizedBox(height: 28),
             const Text(
               'SALARY BROTHER',
               style: TextStyle(
