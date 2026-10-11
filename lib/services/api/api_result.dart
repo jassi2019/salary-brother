@@ -55,4 +55,17 @@ class ApiResult<T> {
 
   /// The CRM has ended the session.
   bool get shouldLogout => status == CrmStatus.logout || statusCode == 401;
+
+  /// True when the CRM answered and refused, as opposed to the request never
+  /// getting an answer. [message]/[error] is then written for the customer and
+  /// safe to show; a transport failure's text is not.
+  bool get isCrmRefusal => !isSuccess && status != CrmStatus.failed;
+
+  /// True when the call never reached a verdict: no network, a timeout, a
+  /// non-JSON body, or a 5xx. Worth offering a retry for.
+  bool get isTransportFailure => !isSuccess && status == CrmStatus.failed;
+
+  /// The CRM told us where to send the customer, so the caller should navigate
+  /// rather than show an error.
+  bool get requiresRedirect => shouldLogout || shouldBounceToDashboard;
 }

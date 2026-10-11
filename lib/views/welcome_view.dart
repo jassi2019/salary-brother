@@ -5,6 +5,7 @@ import '../routes/route_names.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_sizes.dart';
 import '../utils/app_text_styles.dart';
+import '../utils/brand_config.dart';
 import '../widgets/app_card.dart';
 import '../widgets/brand_logo.dart';
 import '../widgets/primary_button.dart';
@@ -40,9 +41,9 @@ class WelcomeView extends StatelessWidget {
               _loginPrompt(),
               const SizedBox(height: AppSizes.m),
               const Text(
-                // TODO: replace with the real NBFC partner's registered name.
-                'Loans are offered by [NBFC Partner Name], an RBI-registered '
-                'NBFC. Salary Brother is its lending service provider.',
+                'Loans are offered by ${BrandConfig.nbfcPartnerName}, an '
+                'RBI-registered NBFC. ${BrandConfig.brandName} is its lending '
+                'service provider.',
                 textAlign: TextAlign.center,
                 style: AppTextStyles.legal,
               ),

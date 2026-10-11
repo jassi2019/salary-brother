@@ -9,12 +9,17 @@
 class ApiEndpoints {
   ApiEndpoints._();
 
-  /// The one write endpoint. Login, OTP, PAN, every profile step and every
-  /// document upload post here; `event_name` in the body decides what the CRM
-  /// does with it. See [ApiEvents].
+  /// Customer-profile writes: login, OTP, resend, PAN, personal, residence and
+  /// income details, `register_now`, and the selfie upload. `event_name` in
+  /// the body decides which. See [ApiEvents].
   static const String saveCustomerProfile = 'saveCustomerProfile';
 
-  /// Loan-application writes, also discriminated by `event_name`.
+  /// Lead writes: employment and banking details, the loan quote and its
+  /// decision, and the five non-selfie document uploads. Same `event_name`
+  /// discriminator.
+  ///
+  /// The upload split is easy to get wrong: `selfie_upload` goes to
+  /// [saveCustomerProfile], every other upload event comes here.
   static const String saveLeadDetails = 'saveleadDetails';
 
   // --- reads --------------------------------------------------------------

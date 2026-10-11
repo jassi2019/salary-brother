@@ -71,6 +71,8 @@ class AuthController extends GetxController {
     );
     isSendingOtp.value = false;
 
+    if (await JourneyService.handleRedirect(result)) return;
+
     if (!result.isSuccess) {
       _toast(result.error ?? AppStrings.somethingWentWrong);
       return;
@@ -110,6 +112,8 @@ class AuthController extends GetxController {
     );
     isSendingOtp.value = false;
 
+    if (await JourneyService.handleRedirect(result)) return;
+
     if (!result.isSuccess) {
       _toast(result.error ?? AppStrings.somethingWentWrong);
       return;
@@ -141,6 +145,8 @@ class AuthController extends GetxController {
       },
     );
     isVerifying.value = false;
+
+    if (await JourneyService.handleRedirect(result)) return;
 
     if (!result.isSuccess) {
       _toast(result.error ?? AppStrings.somethingWentWrong);

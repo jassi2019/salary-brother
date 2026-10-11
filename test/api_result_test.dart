@@ -66,4 +66,49 @@ void main() {
       expect(result.shouldLogout, isTrue);
     });
   });
+
+  group('refusal vs transport failure', () {
+    test('a CRM refusal is distinguishable from the network dying', () {
+      // Status 3 and 4 mean the CRM answered and decided something.
+      for (final status in [CrmStatus.logout, CrmStatus.bounceToDashboard]) {
+        final result = ApiResult<Map<String, dynamic>>.failure(
+          'Please log in again',
+          status: status,
+        );
+
+        expect(result.isCrmRefusal, isTrue, reason: '$status');
+        expect(result.isTransportFailure, isFalse, reason: '$status');
+        expect(result.requiresRedirect, isTrue, reason: '$status');
+      }
+    });
+
+    test('a timeout or dead connection is a transport failure', () {
+      const result = ApiResult<Map<String, dynamic>>.failure(
+        'No internet connection',
+      );
+
+      expect(result.isTransportFailure, isTrue);
+      expect(result.isCrmRefusal, isFalse);
+      // Nothing to redirect to — the caller should offer a retry.
+      expect(result.requiresRedirect, isFalse);
+    });
+
+    test('a success is neither', () {
+      const result = ApiResult.success({'ok': true});
+
+      expect(result.isCrmRefusal, isFalse);
+      expect(result.isTransportFailure, isFalse);
+      expect(result.requiresRedirect, isFalse);
+    });
+
+    test('status 3 redirects without logging out', () {
+      const result = ApiResult<Map<String, dynamic>>.failure(
+        'Start from the dashboard',
+        status: CrmStatus.bounceToDashboard,
+      );
+
+      expect(result.requiresRedirect, isTrue);
+      expect(result.shouldLogout, isFalse);
+    });
+  });
 }

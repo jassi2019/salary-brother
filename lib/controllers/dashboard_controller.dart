@@ -30,16 +30,14 @@ class DashboardController extends GetxController {
     );
     isLoading.value = false;
 
+    if (await JourneyService.handleRedirect(result)) return;
+
     if (!result.isSuccess) {
-      // Status 4 means the CRM ended the session; Status 3 sends the customer
-      // back to the dashboard, which is already where they are.
-      if (result.shouldLogout) {
-        await JourneyService.logout();
-        return;
-      }
       errorMessage.value = result.error ?? '';
       return;
     }
+
+    await JourneyService.rememberStep(result.data);
 
     final data = result.data;
     if (data != null && data.isNotEmpty) {

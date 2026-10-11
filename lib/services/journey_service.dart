@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 
 import '../routes/route_names.dart';
 import 'api/api_events.dart';
+import 'api/api_result.dart';
 import 'storage_service.dart';
 
 /// Server-driven navigation.
@@ -67,6 +68,39 @@ class JourneyService {
   /// Opens the screen for the step stored from the last response. Used on
   /// launch to resume a half-finished application.
   static void resume() => goToStep(StorageService.stepStage);
+
+  /// Acts on a `Status` that asks for a redirect: `4` logs out, `3` returns
+  /// the customer to the dashboard.
+  ///
+  /// Returns true if it navigated, so callers can stop instead of also
+  /// showing an error:
+  ///
+  /// ```dart
+  /// if (await JourneyService.handleRedirect(result)) return;
+  /// if (!result.isSuccess) { showError(result.error); return; }
+  /// ```
+  static Future<bool> handleRedirect(ApiResult<dynamic> result) async {
+    if (result.shouldLogout) {
+      await logout();
+      return true;
+    }
+
+    if (result.shouldBounceToDashboard) {
+      // Already on the dashboard: nothing to do, and re-pushing it would
+      // drop whatever the customer was told.
+      if (Get.currentRoute == RouteNames.dashboard) return false;
+      Get.offAllNamed(RouteNames.dashboard);
+      return true;
+    }
+
+    return false;
+  }
+
+  /// Stores the CRM's `next_step` from a response payload, if it carried one.
+  static Future<void> rememberStep(Map<String, dynamic>? data) async {
+    final next = data?['next_step']?.toString() ?? '';
+    if (next.isNotEmpty) await StorageService.setStepStage(next);
+  }
 
   /// How far the customer has got, for progress indicators.
   static int get currentPosition =>

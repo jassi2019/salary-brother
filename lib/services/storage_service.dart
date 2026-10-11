@@ -8,7 +8,9 @@ class StorageService {
 
   static const String _keyToken = 'token';
   static const String _keyProfileId = 'profile_id';
-  static const String _keyMobile = 'mobile';
+  // Spelled as the reference app spells it, so an existing install's data
+  // still reads.
+  static const String _keyMobile = 'mnumber';
   static const String _keyPancard = 'pancard';
   static const String _keyStepStage = 'step_stage';
   static const String _keyIsLogin = 'is_login';
@@ -16,6 +18,7 @@ class StorageService {
   static const String _keyUtmSource = 'utm_source';
   static const String _keyLatLong = 'lat_long';
   static const String _keyOnboarded = 'onboarding_seen';
+  static const String _keyDarkMode = 'isDarkMode';
 
   static Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
@@ -74,9 +77,18 @@ class StorageService {
   static Future<void> setOnboardingSeen() =>
       _prefs.setBool(_keyOnboarded, true);
 
-  /// Wipes the session on logout, keeping the device-level flags that are not
-  /// tied to a customer.
+  // --- theme --------------------------------------------------------------
+
+  static bool get isDarkMode => _prefs.getBool(_keyDarkMode) ?? false;
+  static Future<void> setDarkMode(bool value) =>
+      _prefs.setBool(_keyDarkMode, value);
+
+  /// Wipes the session on logout, keeping the device-level settings that are
+  /// not tied to a customer: the theme choice (as the reference app does),
+  /// plus the push token, attribution source and onboarding flag, which belong
+  /// to the install rather than the account.
   static Future<void> clearSession() async {
+    final dark = isDarkMode;
     final fcm = fcmToken;
     final utm = utmSource;
     final onboarded = hasSeenOnboarding;
@@ -84,6 +96,7 @@ class StorageService {
     await _prefs.clear();
 
     await setLoggedIn(false);
+    await setDarkMode(dark);
     if (fcm != null) await setFcmToken(fcm);
     if (utm != null) await setUtmSource(utm);
     if (onboarded) await setOnboardingSeen();

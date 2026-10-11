@@ -7,11 +7,26 @@ import 'api/api_result.dart';
 import 'storage_service.dart';
 
 /// Which auth header a call carries.
+///
+/// Which endpoint takes which is **not** a clean pre-login / post-login split
+/// — the CRM's assignment is irregular, so copy it per endpoint from the
+/// reference app rather than inferring it:
+///
+/// | Endpoint | Mode |
+/// |---|---|
+/// | login, resend_otp, otp_verify | [login] |
+/// | verifyRazorPayCheckPaymentStatus | [login] |
+/// | checkInstantAppVersion | [login] |
+/// | fetchOkycData | [login] |
+/// | getOkycOtp | [static_] |
+/// | feedback | [static_] |
+/// | everything else | [token] |
 enum AuthMode {
-  /// The pre-login `Auth` key, for login, OTP and resend.
+  /// The platform-dependent `Auth` key (`apiHeader1` in the reference app).
+  /// Despite the name, some post-login endpoints use it too — see the table.
   login,
 
-  /// The general static `Auth` key.
+  /// The general static `Auth` key (`apiHeader` in the reference app).
   static_,
 
   /// The logged-in customer's `Authtoken`.
@@ -65,10 +80,18 @@ class ApiService {
 
   /// Posts to the Aadhaar OKYC module, which sits outside the platform prefix
   /// and answers with its own `statusCode` / `data` envelope.
+  ///
+  /// The two OKYC calls disagree on which key they want, so [auth] has no
+  /// default: `getOkycOtp` wants [AuthMode.static_] and `fetchOkycData` wants
+  /// [AuthMode.login]. Pass it explicitly.
+  ///
+  /// [requireOtpSent] additionally demands `data.otpSentStatus == "true"`,
+  /// which `getOkycOtp` returns alongside a 200 even when no OTP went out.
   Future<ApiResult<Map<String, dynamic>>> postOkyc(
     String endpoint, {
+    required AuthMode auth,
     Map<String, dynamic>? body,
-    AuthMode auth = AuthMode.static_,
+    bool requireOtpSent = false,
   }) =>
       _send(
         () => _dio.post(
@@ -77,6 +100,7 @@ class ApiService {
           options: _options(auth),
         ),
         okycEnvelope: true,
+        requireOtpSent: requireOtpSent,
       );
 
   Options _options(AuthMode auth) {
@@ -99,6 +123,7 @@ class ApiService {
   Future<ApiResult<Map<String, dynamic>>> _send(
     Future<Response<dynamic>> Function() request, {
     bool okycEnvelope = false,
+    bool requireOtpSent = false,
   }) async {
     try {
       final response = await request();
@@ -114,7 +139,9 @@ class ApiService {
       }
       final map = Map<String, dynamic>.from(raw);
 
-      return okycEnvelope ? _readOkyc(map, httpStatus) : _readCrm(map, httpStatus);
+      return okycEnvelope
+          ? _readOkyc(map, httpStatus, requireOtpSent: requireOtpSent)
+          : _readCrm(map, httpStatus);
     } on DioException catch (e) {
       return ApiResult.failure(_describe(e), statusCode: e.response?.statusCode);
     } catch (_) {
@@ -149,25 +176,32 @@ class ApiService {
   }
 
   /// The Aadhaar OKYC envelope: lowercase `statusCode` and `data`.
+  ///
+  /// Only `200` counts as success — the CRM's other codes do not — and
+  /// `getOkycOtp` can answer 200 while reporting that no OTP was sent, so
+  /// [requireOtpSent] checks that too.
   ApiResult<Map<String, dynamic>> _readOkyc(
     Map<String, dynamic> body,
-    int httpStatus,
-  ) {
+    int httpStatus, {
+    bool requireOtpSent = false,
+  }) {
     final code = body['statusCode']?.toString();
     final message = (body['message'] ?? body['Message'])?.toString();
-    final data = body['data'];
+    final raw = body['data'];
+    final data =
+        raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
 
-    if (code == '200' || code == '1') {
-      return ApiResult.success(
-        data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{},
-        message: message,
-      );
+    final otpSent =
+        !requireOtpSent || data['otpSentStatus']?.toString() == 'true';
+
+    if (code == '200' && otpSent) {
+      return ApiResult.success(data, message: message);
     }
 
     return ApiResult.failure(
       (message?.trim().isNotEmpty ?? false)
           ? message!
-          : AppStrings.somethingWentWrong,
+          : 'Could not send the Aadhaar OTP. Please try again.',
       statusCode: httpStatus,
     );
   }

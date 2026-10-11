@@ -2,17 +2,35 @@ import 'package:get/get_utils/get_utils.dart';
 
 /// Base URLs, the platform prefix and the auth headers.
 ///
-/// The backend is the Salary Brother CRM, which mirrors the SalaryUncle CRM:
-/// every request goes to `<base>/<platform prefix>/<endpoint>`, where the
-/// prefix is `/andrd` on Android and `/ios` on iOS.
+/// The backend is the Salary Brother CRM, which mirrors the SalaryUncle CRM
+/// endpoint for endpoint — only the host differs. Every request goes to
+/// `<base>/<platform prefix>/<endpoint>`, where the prefix is `/andrd` on
+/// Android and `/ios` on iOS.
+///
+/// Two paths on the same host are easy to confuse:
+///  * `/api` — what this app talks to. Unverified for this host: SalaryUncle's
+///    CRM serves its JSON API under `/api`, and this mirrors that, but the
+///    Salary Brother CRM has not been confirmed to do the same. Checked
+///    2026-10-11: `crm.salarybrother.com/apply` returns 404, so the CRM may
+///    not be deployed yet.
+///  * `/apply` — described as the page where leads land. The app does not call
+///    it.
 class ApiConfig {
   ApiConfig._();
 
   /// Flip to true to point the app at the UAT host.
   static const bool isDev = false;
 
-  static const String _uatBaseUrl = 'https://crm.salarybrother.com/api';
-  static const String _prodBaseUrl = 'https://crm.salarybrother.com/api';
+  static const String _host = 'https://crm.salarybrother.com';
+
+  /// SalaryUncle points UAT and prod at the same host; mirror that until a
+  /// separate Salary Brother UAT host exists.
+  static const String _uatBaseUrl = '$_host/api';
+  static const String _prodBaseUrl = '$_host/api';
+
+  /// The CRM page where leads land. Staff-facing, opened in a browser — not an
+  /// API path. Kept here so nobody mistakes it for one again.
+  static const String leadsPageUrl = '$_host/apply';
 
   static const String _androidPrefix = '/andrd';
   static const String _iosPrefix = '/ios';
@@ -49,15 +67,19 @@ class ApiConfig {
 
   // --- Auth headers -------------------------------------------------------
   //
-  // TODO: replace both placeholders with the Salary Brother CRM's own keys.
-  // These are per-product and per-platform; do not reuse another product's.
-  // Until they are filled in, every request will be rejected by the CRM.
+  // The CRM uses two static `Auth` keys, one platform-dependent and one not,
+  // plus the customer's `Authtoken` after login. Which endpoint takes which is
+  // irregular — see the table on `AuthMode`.
+  //
+  // TODO: replace all three placeholders with the Salary Brother CRM's own
+  // keys. They are per-product; do not reuse another product's. Until they are
+  // filled in, every request will be rejected.
 
-  /// Static key for pre-login calls (sending and verifying the OTP).
-  static const String _preLoginAuthKeyAndroid = 'REPLACE_ME_ANDROID_AUTH_KEY';
-  static const String _preLoginAuthKeyIos = 'REPLACE_ME_IOS_AUTH_KEY';
+  /// The platform-dependent key (`apiHeader1` upstream).
+  static const String _platformAuthKeyAndroid = 'REPLACE_ME_ANDROID_AUTH_KEY';
+  static const String _platformAuthKeyIos = 'REPLACE_ME_IOS_AUTH_KEY';
 
-  /// Static key for the general, non-login endpoints.
+  /// The single static key, same on every platform (`apiHeader` upstream).
   static const String _generalAuthKey = 'REPLACE_ME_GENERAL_AUTH_KEY';
 
   static const Map<String, String> _jsonHeaders = {
@@ -65,13 +87,16 @@ class ApiConfig {
     'Accept': 'application/json',
   };
 
-  /// Headers for the login / OTP endpoints, before a token exists.
+  /// Headers carrying the platform-dependent key. Used by login, OTP, resend,
+  /// payment verification, the version check and `fetchOkycData`.
   static Map<String, String> get loginHeaders => {
         ..._jsonHeaders,
-        'Auth': GetPlatform.isIOS ? _preLoginAuthKeyIos : _preLoginAuthKeyAndroid,
+        'Auth':
+            GetPlatform.isIOS ? _platformAuthKeyIos : _platformAuthKeyAndroid,
       };
 
-  /// Headers for endpoints that take the static key rather than a token.
+  /// Headers carrying the general static key. Used by `getOkycOtp` and
+  /// `feedback`.
   static Map<String, String> get staticHeaders => {
         ..._jsonHeaders,
         'Auth': _generalAuthKey,
@@ -87,5 +112,6 @@ class ApiConfig {
   /// loudly in debug instead of silently 401-ing.
   static bool get hasPlaceholderKeys =>
       _generalAuthKey.startsWith('REPLACE_ME') ||
-      _preLoginAuthKeyAndroid.startsWith('REPLACE_ME');
+      _platformAuthKeyAndroid.startsWith('REPLACE_ME') ||
+      _platformAuthKeyIos.startsWith('REPLACE_ME');
 }

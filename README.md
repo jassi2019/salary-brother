@@ -101,16 +101,45 @@ https://crm.salarybrother.com/api  +  /andrd | /ios  +  /saveCustomerProfile
 Built in one place by `ApiConfig.url()`. Endpoint constants carry **no leading
 slash** — the CRM rejects the doubled `//`.
 
+**`/api` is unverified for this host.** SalaryUncle's CRM serves its API under
+`/api` and this mirrors that, but `crm.salarybrother.com/apply` returned 404 on
+2026-10-11, so the CRM may not be deployed yet. Confirm before the first real
+call; it is one line in `ApiConfig`.
+
 ### Auth
 
-| Header | When |
-|---|---|
-| `Auth` (pre-login key) | login, OTP, resend |
-| `Auth` (general key) | static endpoints |
-| `Authtoken` | everything after login |
+Three modes, and **which endpoint takes which is irregular** — do not infer a
+pre-login / post-login split:
 
+| Endpoint | Header |
+|---|---|
+| login, resend_otp, otp_verify | `Auth`, platform key |
+| verifyRazorPayCheckPaymentStatus | `Auth`, platform key |
+| checkInstantAppVersion | `Auth`, platform key |
+| fetchOkycData | `Auth`, platform key |
+| getOkycOtp | `Auth`, general key |
+| feedback | `Auth`, general key |
+| everything else | `Authtoken` |
+
+The platform key differs between Android and iOS; the general key does not.
 The token is `Data.app_login_token` from the OTP response, stored under the
 `token` pref and read fresh on every request.
+
+### Uploads
+
+All six document events share one path: **base64 in JSON**, never multipart.
+The body is `{profile_id, doc_type, event_name, file_ext, file}`, where `file`
+is a bare base64 string and `file_ext` carries the extension (`HEIC` is sent as
+`jpg`). Files are posted one at a time, not batched.
+
+Two traps:
+
+- `selfie_upload` posts to `saveCustomerProfile`; the other five post to
+  `saveleadDetails`.
+- `doc_type` does not always match the event name — `residence_proof_upload`
+  sends `doc_type: electricity_bill`, and `aadhaar_upload` is posted twice,
+  once per side (`aadhaar_front`, `aadhaar_back`). These values come from
+  `mandatoryDocuments`, not from the client.
 
 ### Deliberately not ported
 
@@ -124,6 +153,10 @@ The token is `Data.app_login_token` from the OTP response, stored under the
 
 ## What is built and what is not
 
+**4 of the CRM's 14 calls are wired up.** The client and the contract metadata
+are complete — every `event_name`, every path spelling, both envelopes — but
+most screens that would use them do not exist yet.
+
 Done:
 
 - Splash, welcome, login, OTP (4-digit, as the CRM issues), home dashboard,
@@ -131,23 +164,33 @@ Done:
 - Theme, design tokens, shared widgets (`PrimaryButton`, `AppCard`, `HeroCard`,
   `BrandLogo`, `SquareIconButton`)
 - CRM client: URL building, the three auth modes, the `Status` envelope, the
-  OKYC envelope
+  OKYC envelope with its `otpSentStatus` check
 - `event_name` catalogue and the server-driven journey router
-- Auth flow: login, OTP verify, resend
-- Loan pricing engine with tests
-- 48 tests
+- Calls wired: `login`, `resend_otp`, `otp_verify`, `getDashboardData`
+- Loan pricing engine
+- 52 tests
 
-Still to build — screens 05 through 09 of the canvas:
+Still to build — screens 05 through 09 of the canvas, and the calls behind
+them:
 
-- [ ] PAN verification
-- [ ] Personal, residence, income, employment details
-- [ ] Document uploads (selfie, PAN, Aadhaar, residence proof, bank statement,
-      pay slip) — one shared screen, as the CRM routes them all to one place
-- [ ] Banking details
-- [ ] Review + Key Fact Statement, e-Sign
+- [ ] PAN verification — `pancard_verification`
+- [ ] Personal, residence, income details — three `saveCustomerProfile` events
+- [ ] Employment, banking details — two `saveleadDetails` events
+- [ ] Document uploads — six events, base64; needs `mandatoryDocuments` first
+- [ ] Review + Key Fact Statement — `register_now`
+- [ ] Loan quote and decision — `generate_loan_quote`,
+      `loan_quotation_decision`
 - [ ] Money sent / disbursal confirmation
-- [ ] Repay
-- [ ] Profile
+- [ ] Repay — `generateRazorpayorderId`,
+      `verifyRazorPayCheckPaymentStatus`
+- [ ] Profile, loan list and detail — `getLeadList`, `getLeadDetail`
+- [ ] Aadhaar OKYC — `getOkycOtp`, `fetchOkycData`
+- [ ] Support — `feedback`
+- [ ] Version gate — `checkInstantAppVersion`
+
+`JourneyService.routeFor` already maps the routes for these, so a CRM
+`next_step` naming one will navigate to a route that is not registered yet.
+Register each page as its screen lands.
 
 ## Before launch
 
@@ -168,6 +211,28 @@ These are placeholders in the code and **must** be replaced:
 5. **Pricing** — `LoanPricing` carries the design's sample terms (1%/day
    interest, 10% processing fee, 18% GST). Swap in the lending partner's final
    terms; the APR shown to the borrower is derived from them.
-6. **App icons and splash assets** — `assets/images/` is empty.
-7. **Android package / iOS bundle id** — currently
+6. **Contact details** — `BrandConfig.phone`, `.whatsapp` and `.email` are
+   blank. salarybrother.com carried none as of 2026-10-11: every path returns
+   the same placeholder page with only tracking tags on it. The privacy policy
+   and terms URLs point at pages that do not exist yet, and RBI digital-lending
+   rules require them to be reachable from the app.
+7. **App icons and splash assets** — `assets/images/` is empty.
+8. **Android package / iOS bundle id** — currently
    `com.salarybrother.salary_brother`.
+9. **Razorpay key** — passed at build time via
+   `--dart-define=RAZORPAY_KEY=...`, never committed. `PaymentConfig.isConfigured`
+   is false without it.
+
+### A note on the reference app's branding
+
+SalaryUncle has **three** layers of stale branding under the surface, which is
+why nothing was copied wholesale:
+
+| Layer | Where it survives |
+|---|---|
+| `tejas_loan` | the Dart package name, and so 273 import lines; iOS `Info.plist` |
+| `suryaloan` | **both** Firebase projects (`suryaloan-e961a`), iOS bundle `com.raghavi.suryaloan`, a live AppsFlyer `SuryaLoan` meta-data tag |
+| `salarytopup` | Android namespace and the `MainActivity.java` package path |
+
+Only the outermost layer says SalaryUncle. This app starts clean, so none of it
+carries over — but it is worth knowing when comparing the two repos.
