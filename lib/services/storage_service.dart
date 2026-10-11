@@ -4,7 +4,23 @@ import 'package:shared_preferences/shared_preferences.dart';
 class StorageService {
   StorageService._();
 
-  static late SharedPreferences _prefs;
+  static SharedPreferences? _instance;
+
+  /// Throws a clear error rather than a LateInitializationError if something
+  /// reads storage before [init] has run.
+  static SharedPreferences get _prefs {
+    final prefs = _instance;
+    if (prefs == null) {
+      throw StateError(
+        'StorageService.init() must be awaited before reading storage.',
+      );
+    }
+    return prefs;
+  }
+
+  /// True once [init] has run. Lets a caller skip a storage-backed check
+  /// rather than crash on it.
+  static bool get isReady => _instance != null;
 
   static const String _keyToken = 'token';
   static const String _keyProfileId = 'profile_id';
@@ -21,7 +37,7 @@ class StorageService {
   static const String _keyDarkMode = 'isDarkMode';
 
   static Future<void> init() async {
-    _prefs = await SharedPreferences.getInstance();
+    _instance = await SharedPreferences.getInstance();
   }
 
   // --- session ------------------------------------------------------------

@@ -2,12 +2,17 @@ import 'package:get/get.dart';
 
 import '../bindings/auth_binding.dart';
 import '../bindings/dashboard_binding.dart';
+import '../bindings/kyc_binding.dart';
 import '../bindings/loan_binding.dart';
 import '../bindings/splash_binding.dart';
 import '../views/apply_amount_view.dart';
 import '../views/dashboard_view.dart';
+import '../views/income_details_view.dart';
+import '../views/kyc_pan_view.dart';
 import '../views/login_view.dart';
 import '../views/otp_view.dart';
+import '../views/personal_details_view.dart';
+import '../views/residence_details_view.dart';
 import '../views/splash_view.dart';
 import '../views/support_view.dart';
 import '../views/welcome_view.dart';
@@ -53,6 +58,26 @@ class AppPages {
     GetPage(
       name: RouteNames.support,
       page: () => const SupportView(),
+    ),
+    GetPage(
+      name: RouteNames.kycPan,
+      page: () => const KycPanView(),
+      binding: KycBinding(),
+    ),
+    GetPage(
+      name: RouteNames.personalDetails,
+      page: () => const PersonalDetailsView(),
+      binding: ProfileBinding(),
+    ),
+    GetPage(
+      name: RouteNames.residenceDetails,
+      page: () => const ResidenceDetailsView(),
+      binding: ProfileBinding(),
+    ),
+    GetPage(
+      name: RouteNames.incomeDetails,
+      page: () => const IncomeDetailsView(),
+      binding: ProfileBinding(),
     ),
   ];
 }
