@@ -12,6 +12,7 @@ import '../views/kyc_pan_view.dart';
 import '../views/login_view.dart';
 import '../views/otp_view.dart';
 import '../views/personal_details_view.dart';
+import '../views/profile_view.dart';
 import '../views/residence_details_view.dart';
 import '../views/splash_view.dart';
 import '../views/support_view.dart';
@@ -58,6 +59,11 @@ class AppPages {
     GetPage(
       name: RouteNames.support,
       page: () => const SupportView(),
+    ),
+    GetPage(
+      name: RouteNames.profile,
+      page: () => const ProfileView(),
+      binding: DashboardBinding(),
     ),
     GetPage(
       name: RouteNames.kycPan,

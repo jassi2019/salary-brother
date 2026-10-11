@@ -488,6 +488,26 @@ class _HowItWorks extends StatelessWidget {
 class _BottomNav extends StatelessWidget {
   const _BottomNav();
 
+  static const Map<int, String> _routes = {
+    1: RouteNames.applyAmount,
+    2: RouteNames.profile,
+    3: RouteNames.support,
+  };
+
+  /// Home is already on screen, so tapping it only clears the highlight.
+  /// The others push, then reset the bar when the customer comes back.
+  Future<void> _openTab(DashboardController controller, int index) async {
+    final route = _routes[index];
+    if (route == null) {
+      controller.tabIndex.value = 0;
+      return;
+    }
+
+    controller.tabIndex.value = index;
+    await Get.toNamed(route);
+    controller.tabIndex.value = 0;
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<DashboardController>();
@@ -497,21 +517,13 @@ class _BottomNav extends StatelessWidget {
         color: AppColors.white,
         border: Border(top: BorderSide(color: AppColors.borderSoft)),
       ),
-      // Only the tabs whose screens exist. Loans, Repay and Profile have no
-      // route registered yet; add each tab back with its screen, rather than
-      // shipping a bar where half the taps do nothing.
+      // Every tab goes somewhere that exists. Repay has no screen yet, so
+      // its slot is the calculator until it does — rather than a tab that
+      // does nothing when tapped.
       child: Obx(
         () => BottomNavigationBar(
           currentIndex: controller.tabIndex.value,
-          onTap: (index) async {
-            if (index == 0) return;
-
-            controller.tabIndex.value = index;
-            await Get.toNamed(RouteNames.support);
-            // Back from support: Home is on screen again, so the bar must
-            // stop highlighting Support.
-            controller.tabIndex.value = 0;
-          },
+          onTap: (index) => _openTab(controller, index),
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.home_outlined),
@@ -519,7 +531,18 @@ class _BottomNav extends StatelessWidget {
               label: 'Home',
             ),
             BottomNavigationBarItem(
+              icon: Icon(Icons.calculate_outlined),
+              activeIcon: Icon(Icons.calculate_rounded),
+              label: 'Apply',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline_rounded),
+              activeIcon: Icon(Icons.person_rounded),
+              label: 'Profile',
+            ),
+            BottomNavigationBarItem(
               icon: Icon(Icons.headset_mic_outlined),
+              activeIcon: Icon(Icons.headset_mic_rounded),
               label: 'Support',
             ),
           ],

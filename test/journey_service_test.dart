@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:salary_brother/routes/app_pages.dart';
+import 'package:salary_brother/routes/route_names.dart';
 import 'package:salary_brother/services/api/api_events.dart';
 import 'package:salary_brother/services/journey_service.dart';
 
@@ -71,6 +72,27 @@ void main() {
             JourneyService.isRegistered('/dashboard'),
         isTrue,
       );
+    });
+  });
+
+  group('the bottom navigation', () {
+    test('every tab has a screen to open', () {
+      // A tab that routes nowhere looks like a dead app. If a tab is added
+      // before its screen, this fails rather than shipping.
+      const tabs = [
+        RouteNames.dashboard,
+        RouteNames.applyAmount,
+        RouteNames.profile,
+        RouteNames.support,
+      ];
+
+      for (final route in tabs) {
+        expect(
+          JourneyService.isRegistered(route),
+          isTrue,
+          reason: '$route is on the bottom bar but has no page',
+        );
+      }
     });
   });
 }
