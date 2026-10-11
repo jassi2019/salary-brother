@@ -88,11 +88,12 @@ class _Greeting extends StatelessWidget {
               ],
             ),
           ),
+          // TODO: show this once there is a notifications screen behind it.
+          // An enabled button that does nothing reads as a broken app.
           SquareIconButton(
-            icon: Icons.notifications_none_rounded,
-            tooltip: 'Notifications',
-            badge: true,
-            onPressed: () {},
+            icon: Icons.headset_mic_outlined,
+            tooltip: 'Support',
+            onPressed: () => Get.toNamed(RouteNames.support),
           ),
         ],
       );

@@ -36,6 +36,9 @@ class AppPages {
     GetPage(
       name: RouteNames.otp,
       page: () => const OtpView(),
+      // OtpView reads the controller during build. Without its own binding it
+      // only resolves while the login route happens to still be on the stack.
+      binding: AuthBinding(),
     ),
     GetPage(
       name: RouteNames.dashboard,

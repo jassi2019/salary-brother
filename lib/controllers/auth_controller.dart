@@ -12,6 +12,7 @@ import '../services/storage_service.dart';
 import '../utils/app_strings.dart';
 import '../utils/otp_parser.dart';
 import '../utils/validators.dart';
+import '../widgets/app_toast.dart';
 
 class AuthController extends GetxController {
   final mobileController = TextEditingController();
@@ -220,6 +221,5 @@ class AuthController extends GetxController {
         '${(s % 60).toString().padLeft(2, '0')}';
   }
 
-  void _toast(String message) =>
-      Get.snackbar('', message, titleText: const SizedBox.shrink());
+  void _toast(String message) => AppToast.error(message);
 }

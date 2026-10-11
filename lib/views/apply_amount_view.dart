@@ -35,7 +35,7 @@ class ApplyAmountView extends GetView<LoanController> {
             child: SquareIconButton(
               icon: Icons.help_outline_rounded,
               tooltip: 'Help',
-              onPressed: () {},
+              onPressed: () => Get.toNamed(RouteNames.support),
             ),
           ),
         ],
@@ -478,7 +478,7 @@ class _ChoiceChipButton extends StatelessWidget {
         height: height,
         child: Material(
           color: selected ? AppColors.primary : AppColors.white,
-          borderRadius: BorderRadius.circular(radius),
+          // Shape only: Material asserts if borderRadius is given as well.
           shape: RoundedRectangleBorder(
             side: BorderSide(
               color: selected ? AppColors.primary : AppColors.border,

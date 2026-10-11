@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../controllers/auth_controller.dart';
+import '../routes/route_names.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_sizes.dart';
 import '../utils/app_text_styles.dart';
@@ -18,61 +19,88 @@ class LoginView extends GetView<AuthController> {
     return Scaffold(
       backgroundColor: AppColors.white,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSizes.screenPadding,
-            AppSizes.screenPadding,
-            AppSizes.screenPadding,
-            24,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  SquareIconButton(
-                    icon: Icons.chevron_left_rounded,
-                    tooltip: 'Back',
-                    background: AppColors.surface,
-                    onPressed: Get.back<void>,
-                  ),
-                  TextButton(
-                    onPressed: () {},
-                    child: const Text('Need help?'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSizes.xxl),
-              const Text(
-                'Verify your mobile number',
-                style: AppTextStyles.h2,
-              ),
-              const SizedBox(height: 10),
-              const Text(
-                "We'll text you a one-time password. Use the number linked "
-                'to your bank account.',
-                style: AppTextStyles.bodyMuted,
-              ),
-              const SizedBox(height: AppSizes.xxl),
-              const Text('Mobile number', style: AppTextStyles.label),
-              const SizedBox(height: AppSizes.s),
-              _mobileField(),
-              const Spacer(),
-              _termsCheckbox(),
-              const SizedBox(height: 18),
-              Obx(
-                () => PrimaryButton(
-                  label: 'Send OTP',
-                  isLoading: controller.isSendingOtp.value,
-                  onPressed: controller.canSendOtp ? controller.sendOtp : null,
+        // The keyboard takes ~300px. Without a scroll view the Column's
+        // Spacer collapses, the content overflows and the field's text is
+        // laid out off-screen — which looked like the digits not appearing
+        // until the keyboard was dismissed.
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSizes.screenPadding,
+              AppSizes.screenPadding,
+              AppSizes.screenPadding,
+              24,
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight - 44),
+              child: IntrinsicHeight(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        SquareIconButton(
+                          icon: Icons.chevron_left_rounded,
+                          tooltip: 'Back',
+                          background: AppColors.surface,
+                          onPressed: _goBack,
+                        ),
+                        TextButton(
+                          onPressed: () => Get.toNamed(RouteNames.support),
+                          child: const Text('Need help?'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSizes.xxl),
+                    const Text(
+                      'Verify your mobile number',
+                      style: AppTextStyles.h2,
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      "We'll text you a one-time password. Use the number "
+                      'linked to your bank account.',
+                      style: AppTextStyles.bodyMuted,
+                    ),
+                    const SizedBox(height: AppSizes.xxl),
+                    const Text('Mobile number', style: AppTextStyles.label),
+                    const SizedBox(height: AppSizes.s),
+                    _mobileField(),
+                    const Spacer(),
+                    const SizedBox(height: AppSizes.xxl),
+                    _termsCheckbox(),
+                    const SizedBox(height: 18),
+                    Obx(
+                      () => PrimaryButton(
+                        label: 'Send OTP',
+                        isLoading: controller.isSendingOtp.value,
+                        onPressed:
+                            controller.canSendOtp ? controller.sendOtp : null,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  /// Leaves the login screen.
+  ///
+  /// Login is sometimes pushed on top of welcome and sometimes made the root
+  /// route (after a logout, or when the CRM's step is unrecognised). On a root
+  /// route `Get.back` is a no-op and the chevron looks broken, so fall back to
+  /// the welcome screen.
+  void _goBack() {
+    if (Get.previousRoute.isNotEmpty) {
+      Get.back<void>();
+    } else {
+      Get.offAllNamed(RouteNames.welcome);
+    }
   }
 
   Widget _mobileField() {

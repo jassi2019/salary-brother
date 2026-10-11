@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 
 import '../controllers/auth_controller.dart';
+import '../routes/route_names.dart';
 import '../services/sms_config.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_sizes.dart';
@@ -20,56 +21,69 @@ class OtpView extends GetView<AuthController> {
     return Scaffold(
       backgroundColor: AppColors.white,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSizes.screenPadding,
-            AppSizes.screenPadding,
-            AppSizes.screenPadding,
-            24,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  SquareIconButton(
-                    icon: Icons.chevron_left_rounded,
-                    tooltip: 'Back',
-                    background: AppColors.surface,
-                    onPressed: Get.back<void>,
-                  ),
-                  TextButton(
-                    onPressed: () {},
-                    child: const Text('Need help?'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSizes.xxl),
-              const Text('Enter the OTP', style: AppTextStyles.h2),
-              const SizedBox(height: 10),
-              Text(
-                'Sent to +91 ${Formatters.mobile(controller.mobile)}. '
-                'It expires in ${SmsConfig.otpValidity.inMinutes} minutes.',
-                style: AppTextStyles.bodyMuted,
-              ),
-              const SizedBox(height: AppSizes.xxl),
-              _otpHeader(),
-              const SizedBox(height: AppSizes.m),
-              _otpFields(),
-              const SizedBox(height: AppSizes.m),
-              _resendRow(),
-              const Spacer(),
-              Obx(
-                () => PrimaryButton(
-                  label: 'Verify & continue',
-                  showIcon: false,
-                  isLoading: controller.isVerifying.value,
-                  onPressed:
-                      controller.canVerify ? controller.verifyOtp : null,
+        // Scrollable for the same reason as the login screen: the OTP field
+        // autofocuses, and without this the keyboard squeezes the Column
+        // until its content is laid out off-screen.
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSizes.screenPadding,
+              AppSizes.screenPadding,
+              AppSizes.screenPadding,
+              24,
+            ),
+            child: ConstrainedBox(
+              constraints:
+                  BoxConstraints(minHeight: constraints.maxHeight - 44),
+              child: IntrinsicHeight(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        SquareIconButton(
+                          icon: Icons.chevron_left_rounded,
+                          tooltip: 'Back',
+                          background: AppColors.surface,
+                          onPressed: Get.back<void>,
+                        ),
+                        TextButton(
+                          onPressed: () => Get.toNamed(RouteNames.support),
+                          child: const Text('Need help?'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSizes.xxl),
+                    const Text('Enter the OTP', style: AppTextStyles.h2),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Sent to +91 ${Formatters.mobile(controller.mobile)}. '
+                      'It expires in '
+                      '${SmsConfig.otpValidity.inMinutes} minutes.',
+                      style: AppTextStyles.bodyMuted,
+                    ),
+                    const SizedBox(height: AppSizes.xxl),
+                    _otpHeader(),
+                    const SizedBox(height: AppSizes.m),
+                    _otpFields(),
+                    const SizedBox(height: AppSizes.m),
+                    _resendRow(),
+                    const Spacer(),
+                    const SizedBox(height: AppSizes.xxl),
+                    Obx(
+                      () => PrimaryButton(
+                        label: 'Verify & continue',
+                        showIcon: false,
+                        isLoading: controller.isVerifying.value,
+                        onPressed:
+                            controller.canVerify ? controller.verifyOtp : null,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),

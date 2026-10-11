@@ -161,7 +161,7 @@ class _ContactTile extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: AppSizes.m),
       child: Material(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(AppSizes.radiusCard),
+        // Shape only: Material asserts if borderRadius is given as well.
         shape: RoundedRectangleBorder(
           side: const BorderSide(color: AppColors.borderSoft),
           borderRadius: BorderRadius.circular(AppSizes.radiusCard),

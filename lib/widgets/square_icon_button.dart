@@ -38,13 +38,14 @@ class SquareIconButton extends StatelessWidget {
           height: AppSizes.touchTarget,
           child: Material(
             color: background,
-            borderRadius: BorderRadius.circular(AppSizes.radiusOtpBox),
-            shape: showBorder
-                ? RoundedRectangleBorder(
-                    side: const BorderSide(color: AppColors.borderSoft),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusOtpBox),
-                  )
-                : null,
+            // One or the other: Material asserts if both are given. The shape
+            // carries the radius, with a border only when asked for.
+            shape: RoundedRectangleBorder(
+              side: showBorder
+                  ? const BorderSide(color: AppColors.borderSoft)
+                  : BorderSide.none,
+              borderRadius: BorderRadius.circular(AppSizes.radiusOtpBox),
+            ),
             child: InkWell(
               onTap: onPressed,
               borderRadius: BorderRadius.circular(AppSizes.radiusOtpBox),
