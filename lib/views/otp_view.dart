@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 
 import '../controllers/auth_controller.dart';
+import '../services/sms_config.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_sizes.dart';
 import '../utils/app_text_styles.dart';
@@ -48,7 +49,8 @@ class OtpView extends GetView<AuthController> {
               const Text('Enter the OTP', style: AppTextStyles.h2),
               const SizedBox(height: 10),
               Text(
-                'Sent to +91 ${Formatters.mobile(controller.mobile)}',
+                'Sent to +91 ${Formatters.mobile(controller.mobile)}. '
+                'It expires in ${SmsConfig.otpValidity.inMinutes} minutes.',
                 style: AppTextStyles.bodyMuted,
               ),
               const SizedBox(height: AppSizes.xxl),
@@ -82,33 +84,38 @@ class OtpView extends GetView<AuthController> {
           'Enter ${AuthController.otpLength}-digit OTP',
           style: AppTextStyles.label,
         ),
-        Row(
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.15),
-                    spreadRadius: 4,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 6),
-            const Text(
-              'Auto-reading SMS',
-              style: TextStyle(
-                fontFamily: AppTextStyles.fontBody,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primary,
-              ),
-            ),
-          ],
+        // Only claim auto-fill while something is actually listening.
+        Obx(
+          () => controller.isAutoReadingSms.value
+              ? Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.15),
+                            spreadRadius: 4,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'Auto-reading SMS',
+                      style: TextStyle(
+                        fontFamily: AppTextStyles.fontBody,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                )
+              : const SizedBox.shrink(),
         ),
       ],
     );

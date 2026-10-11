@@ -167,7 +167,7 @@ Done:
 - Calls wired: `login`, `resend_otp`, `otp_verify`, `getDashboardData`
 - Support screen: call, WhatsApp, email, office address
 - Loan pricing engine
-- 69 tests
+- 79 tests
 
 Still to build â€” screens 05 through 09 of the canvas, and the calls behind
 them:
@@ -185,6 +185,7 @@ them:
 - [ ] Profile, loan list and detail â€” `getLeadList`, `getLeadDetail`
 - [ ] Aadhaar OKYC â€” `getOkycOtp`, `fetchOkycData`
 - [ ] Feedback form on the support screen â€” `feedback`
+- [ ] SMS Retriever wiring for OTP auto-fill
 - [ ] Version gate â€” `checkInstantAppVersion`
 - [ ] CRM overrides for the contact details: the reference app prefers numbers
       the CRM sends over its own constants, falling back to them
@@ -218,6 +219,36 @@ These are placeholders in the code and **must** be replaced:
 
 `BrandConfig.hasPlaceholders` is the release gate for the brand strings, and a
 test pins it false.
+
+## SMS and the OTP
+
+The gateway is a plain HTTP API with Basic auth
+(`GET /api/basic?mobileno=…&senderid=…&countrycode=ALL&msgtext=…`).
+
+**The app never calls it.** A gateway password in the APK is a password
+anyone can read, and anyone who reads it can send SMS on the company's
+account. The CRM sends the OTP server-side when the app posts
+`event_name: login`.
+
+`SmsConfig` records the DLT registration so it sits next to the code that
+parses the message:
+
+| | |
+|---|---|
+| Sender ID | `SYFLSB` |
+| Template id | `1777178863021936003` |
+| Validity | 5 minutes, per the template's own wording |
+
+The registered body is fixed — editing the wording needs re-approval on the
+DLT portal before it will deliver, so a test asserts it still renders the
+approved sample exactly.
+
+`OtpParser.extract` reads the code from an incoming SMS. It matches the
+template's own slot rather than grabbing the first digits it finds, and
+requires the sender ID, so another app's OTP is never typed into this one.
+Hook `AuthController.onSmsReceived` to the SMS Retriever API to finish
+auto-fill; until something does, `isAutoReadingSms` stays false and the OTP
+screen does not promise it.
 
 ## Lender and pricing
 

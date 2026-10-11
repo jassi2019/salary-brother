@@ -10,6 +10,7 @@ import '../services/api_service.dart';
 import '../services/journey_service.dart';
 import '../services/storage_service.dart';
 import '../utils/app_strings.dart';
+import '../utils/otp_parser.dart';
 import '../utils/validators.dart';
 
 class AuthController extends GetxController {
@@ -26,6 +27,10 @@ class AuthController extends GetxController {
   /// Seconds left before "Resend OTP" becomes tappable.
   final resendSeconds = 0.obs;
   Timer? _resendTimer;
+
+  /// True once an SMS retriever is listening, so the OTP screen only promises
+  /// auto-fill when it can deliver it.
+  final isAutoReadingSms = false.obs;
 
   static const int _resendCooldown = 30;
 
@@ -193,6 +198,19 @@ class AuthController extends GetxController {
         resendSeconds.value--;
       }
     });
+  }
+
+  /// Fills the OTP field from an incoming SMS and submits it.
+  ///
+  /// Wire this to the SMS Retriever API (Android) or
+  /// `TextInputType.numberWithOptions` autofill hints (iOS); until something
+  /// calls it, [isAutoReadingSms] stays false and the screen says so.
+  void onSmsReceived(String body) {
+    final code = OtpParser.extract(body);
+    if (code == null) return;
+
+    otpController.text = code;
+    verifyOtp();
   }
 
   /// "00:24" for the resend hint.
