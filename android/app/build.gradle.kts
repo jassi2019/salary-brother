@@ -8,7 +8,10 @@ plugins {
 android {
     namespace = "com.salarybrother.salary_brother"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+
+    // Several plugins require 27.x, which is backward compatible with the
+    // Flutter default. Pinning it here silences the per-plugin warnings.
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
