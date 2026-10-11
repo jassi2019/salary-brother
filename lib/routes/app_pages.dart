@@ -9,6 +9,7 @@ import '../views/dashboard_view.dart';
 import '../views/login_view.dart';
 import '../views/otp_view.dart';
 import '../views/splash_view.dart';
+import '../views/support_view.dart';
 import '../views/welcome_view.dart';
 import 'route_names.dart';
 
@@ -45,6 +46,10 @@ class AppPages {
       name: RouteNames.applyAmount,
       page: () => const ApplyAmountView(),
       binding: LoanBinding(),
+    ),
+    GetPage(
+      name: RouteNames.support,
+      page: () => const SupportView(),
     ),
   ];
 }

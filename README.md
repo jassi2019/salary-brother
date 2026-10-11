@@ -167,8 +167,9 @@ Done:
   OKYC envelope with its `otpSentStatus` check
 - `event_name` catalogue and the server-driven journey router
 - Calls wired: `login`, `resend_otp`, `otp_verify`, `getDashboardData`
+- Support screen: call, WhatsApp, email, office address
 - Loan pricing engine
-- 52 tests
+- 58 tests
 
 Still to build — screens 05 through 09 of the canvas, and the calls behind
 them:
@@ -185,8 +186,10 @@ them:
       `verifyRazorPayCheckPaymentStatus`
 - [ ] Profile, loan list and detail — `getLeadList`, `getLeadDetail`
 - [ ] Aadhaar OKYC — `getOkycOtp`, `fetchOkycData`
-- [ ] Support — `feedback`
+- [ ] Feedback form on the support screen — `feedback`
 - [ ] Version gate — `checkInstantAppVersion`
+- [ ] CRM overrides for the contact details: the reference app prefers numbers
+      the CRM sends over its own constants, falling back to them
 
 `JourneyService.routeFor` already maps the routes for these, so a CRM
 `next_step` naming one will navigate to a route that is not registered yet.
@@ -211,17 +214,21 @@ These are placeholders in the code and **must** be replaced:
 5. **Pricing** — `LoanPricing` carries the design's sample terms (1%/day
    interest, 10% processing fee, 18% GST). Swap in the lending partner's final
    terms; the APR shown to the borrower is derived from them.
-6. **Contact details** — `BrandConfig.phone`, `.whatsapp` and `.email` are
-   blank. salarybrother.com carried none as of 2026-10-11: every path returns
-   the same placeholder page with only tracking tags on it. The privacy policy
-   and terms URLs point at pages that do not exist yet, and RBI digital-lending
-   rules require them to be reachable from the app.
-7. **App icons and splash assets** — `assets/images/` is empty.
-8. **Android package / iOS bundle id** — currently
+6. **Registered entity** — `BrandConfig.companyName` is blank. SalaryUncle's is
+   Julania Finance Private Limited, but Salary Brother's corporate office is a
+   different address, so the entity may differ. Confirm before shipping.
+7. **Privacy policy and terms pages** — the URLs resolve to a placeholder page.
+   RBI digital-lending rules require both to be reachable from the app, so this
+   is a launch blocker on the website side, not in the code.
+8. **App icons and splash assets** — `assets/images/` is empty.
+9. **Android package / iOS bundle id** — currently
    `com.salarybrother.salary_brother`.
-9. **Razorpay key** — passed at build time via
-   `--dart-define=RAZORPAY_KEY=...`, never committed. `PaymentConfig.isConfigured`
-   is false without it.
+10. **Razorpay key** — passed at build time via
+    `--dart-define=RAZORPAY_KEY=...`, never committed.
+    `PaymentConfig.isConfigured` is false without it.
+
+`BrandConfig.hasPlaceholders` covers items 4 and 6; it must be false before
+release.
 
 ### A note on the reference app's branding
 

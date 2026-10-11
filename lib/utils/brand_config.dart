@@ -15,19 +15,23 @@ class BrandConfig {
   static const String iosAppId = '';
 
   // --- operating company --------------------------------------------------
-  // The lender of record is unchanged from SalaryUncle.
-  static const String companyName = 'Julania Finance Private Limited';
-  static const String companyAddress = 'AG-52, Shalimar Bagh, Delhi-110088';
+  // TODO: confirm the registered entity behind this brand. SalaryUncle's is
+  // Julania Finance Private Limited, but Salary Brother's corporate office is
+  // a different address, so the entity may differ too.
+  static const String companyName = '';
+
+  /// The corporate office, as published on the website.
+  static const String companyAddress =
+      'C2/13, Oahfeo De Vibe, 2nd Floor, Ashok Vihar Phase 2, North Delhi';
 
   // --- contact ------------------------------------------------------------
-  // TODO: fill these in. salarybrother.com was checked on 2026-10-11 and
-  // carries no contact details: every path returns the same placeholder page
-  // with only tracking tags on it. SalaryUncle's equivalents, for reference,
-  // are Customercare@salaryuncle.com / +91 7042561004 / +91 7428966114 —
-  // confirm whether this brand shares them or gets its own.
-  static const String phone = '';
-  static const String whatsapp = '';
-  static const String email = '';
+  // From the Salary Brother website's Get in Touch section.
+  static const String phone = '+917428280884';
+  static const String whatsapp = '+917303095541';
+  static const String email = 'customer.care@salarybrother.com';
+
+  /// Shown next to the support number.
+  static const String supportHours = 'Monday – Saturday, 9 AM to 7 PM';
 
   // --- legal --------------------------------------------------------------
   // RBI digital-lending rules require these to be reachable from the app.
@@ -47,7 +51,7 @@ class BrandConfig {
 
   static const String mapsUrl =
       'https://www.google.com/maps/search/?api=1&query='
-      'AG-52%2C%20Shalimar%20Bagh%2C%20Delhi%20110088';
+      'Oahfeo%20De%20Vibe%2C%20Ashok%20Vihar%20Phase%202%2C%20Delhi';
 
   /// Screens hide a contact affordance rather than open an empty link.
   static bool get hasPhone => phone.isNotEmpty;
@@ -61,5 +65,7 @@ class BrandConfig {
   /// True while any launch-blocking detail is still a placeholder. Useful as a
   /// release check: this must be false before the app ships.
   static bool get hasPlaceholders =>
-      !hasAnyContact || nbfcPartnerName.startsWith('[');
+      !hasAnyContact ||
+      companyName.isEmpty ||
+      nbfcPartnerName.startsWith('[');
 }
