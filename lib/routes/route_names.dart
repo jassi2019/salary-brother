@@ -1,4 +1,7 @@
 /// Route name constants. Use these instead of raw strings everywhere.
+///
+/// The CRM drives navigation through `event_name`; [JourneyService] maps those
+/// events to these routes.
 class RouteNames {
   RouteNames._();
 
@@ -8,9 +11,19 @@ class RouteNames {
   static const String otp = '/otp';
   static const String dashboard = '/dashboard';
 
-  // application flow
+  // KYC and profile steps, in the order the CRM asks for them
+  static const String kycPan = '/kyc/pan';
+  static const String personalDetails = '/personal-details';
+  static const String residenceDetails = '/residence-details';
+  static const String incomeDetails = '/income-details';
+  static const String employmentDetails = '/employment-details';
+  static const String bankDetails = '/bank-details';
+
+  /// Shared upload screen. Takes `{'isSelfie': bool}` as arguments.
+  static const String documents = '/documents';
+
+  // loan flow
   static const String applyAmount = '/apply/amount';
-  static const String kyc = '/kyc';
   static const String review = '/review';
   static const String success = '/success';
   static const String repay = '/repay';

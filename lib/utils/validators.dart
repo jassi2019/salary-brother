@@ -13,10 +13,11 @@ class Validators {
     return null;
   }
 
-  static String? otp(String? value, {int length = 6}) {
+  /// The CRM issues 4-digit OTPs; pass [length] for anything else.
+  static String? otp(String? value, {int length = 4}) {
     final input = (value ?? '').trim();
-    if (input.length != length) return AppStrings.invalidOtp;
-    if (!RegExp(r'^\d+$').hasMatch(input)) return AppStrings.invalidOtp;
+    if (input.length != length) return 'Enter the $length-digit OTP';
+    if (!RegExp(r'^\d+$').hasMatch(input)) return 'Enter the $length-digit OTP';
     return null;
   }
 

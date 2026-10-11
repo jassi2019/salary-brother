@@ -1,12 +1,33 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../utils/app_strings.dart';
-import 'api/api_endpoints.dart';
+import 'api/api_config.dart';
 import 'api/api_result.dart';
 import 'storage_service.dart';
 
-/// Single Dio client for the app. Attaches the auth token and turns every
-/// failure into an [ApiResult] so callers never have to catch DioException.
+/// Which auth header a call carries.
+enum AuthMode {
+  /// The pre-login `Auth` key, for login, OTP and resend.
+  login,
+
+  /// The general static `Auth` key.
+  static_,
+
+  /// The logged-in customer's `Authtoken`.
+  token,
+}
+
+/// Single Dio client for the app.
+///
+/// The Salary Brother CRM is not a REST API:
+///  * almost everything is a POST to one of two write endpoints, with
+///    `event_name` in the body deciding what happens;
+///  * auth travels in an `Auth` or `Authtoken` header, not `Authorization`;
+///  * the outcome is in the body's `Status`, not the HTTP status.
+///
+/// Every failure comes back as an [ApiResult] so callers never catch
+/// DioException.
 class ApiService {
   ApiService._();
 
@@ -14,61 +35,86 @@ class ApiService {
 
   late final Dio _dio = Dio(
     BaseOptions(
-      baseUrl: ApiEndpoints.baseUrl,
       connectTimeout: const Duration(seconds: 20),
       receiveTimeout: const Duration(seconds: 30),
-      headers: {'Content-Type': 'application/json'},
       // Let non-2xx responses through so we can read the server's message.
       validateStatus: (status) => status != null && status < 500,
     ),
-  )..interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) {
-          final token = StorageService.token;
-          if (token != null && token.isNotEmpty) {
-            options.headers['Authorization'] = 'Bearer $token';
-          }
-          handler.next(options);
-        },
-      ),
-    );
+  );
 
-  Future<ApiResult<Map<String, dynamic>>> get(
-    String path, {
-    Map<String, dynamic>? query,
-  }) =>
-      _send(() => _dio.get(path, queryParameters: query));
-
+  /// Posts to [endpoint] under the platform prefix.
+  ///
+  /// [event] is the `event_name` discriminator; it is merged into [body] so
+  /// callers cannot forget it.
   Future<ApiResult<Map<String, dynamic>>> post(
-    String path, {
+    String endpoint, {
+    String? event,
     Map<String, dynamic>? body,
+    AuthMode auth = AuthMode.token,
   }) =>
-      _send(() => _dio.post(path, data: body));
+      _send(
+        () => _dio.post(
+          ApiConfig.url(endpoint),
+          data: {
+            if (event != null) 'event_name': event,
+            ...?body,
+          },
+          options: _options(auth),
+        ),
+      );
 
-  Future<ApiResult<Map<String, dynamic>>> put(
-    String path, {
+  /// Posts to the Aadhaar OKYC module, which sits outside the platform prefix
+  /// and answers with its own `statusCode` / `data` envelope.
+  Future<ApiResult<Map<String, dynamic>>> postOkyc(
+    String endpoint, {
     Map<String, dynamic>? body,
+    AuthMode auth = AuthMode.static_,
   }) =>
-      _send(() => _dio.put(path, data: body));
+      _send(
+        () => _dio.post(
+          ApiConfig.unprefixedUrl(endpoint),
+          data: body,
+          options: _options(auth),
+        ),
+        okycEnvelope: true,
+      );
+
+  Options _options(AuthMode auth) {
+    if (kDebugMode && ApiConfig.hasPlaceholderKeys) {
+      debugPrint(
+        'ApiService: ApiConfig auth keys are still placeholders — '
+        'the CRM will reject this request.',
+      );
+    }
+
+    final headers = switch (auth) {
+      AuthMode.login => ApiConfig.loginHeaders,
+      AuthMode.static_ => ApiConfig.staticHeaders,
+      AuthMode.token => ApiConfig.tokenHeaders(StorageService.token ?? ''),
+    };
+
+    return Options(headers: headers, preserveHeaderCase: true);
+  }
 
   Future<ApiResult<Map<String, dynamic>>> _send(
-    Future<Response<dynamic>> Function() request,
-  ) async {
+    Future<Response<dynamic>> Function() request, {
+    bool okycEnvelope = false,
+  }) async {
     try {
       final response = await request();
-      final status = response.statusCode ?? 0;
-      final data = response.data;
+      final httpStatus = response.statusCode ?? 0;
+      final raw = response.data;
 
-      if (status >= 200 && status < 300) {
-        return ApiResult.success(
-          data is Map<String, dynamic> ? data : <String, dynamic>{},
+      // A non-JSON body (an HTML error page, say) must not reach the callers.
+      if (raw is! Map) {
+        return ApiResult.failure(
+          AppStrings.somethingWentWrong,
+          statusCode: httpStatus,
         );
       }
+      final map = Map<String, dynamic>.from(raw);
 
-      return ApiResult.failure(
-        _messageFrom(data) ?? AppStrings.somethingWentWrong,
-        statusCode: status,
-      );
+      return okycEnvelope ? _readOkyc(map, httpStatus) : _readCrm(map, httpStatus);
     } on DioException catch (e) {
       return ApiResult.failure(_describe(e), statusCode: e.response?.statusCode);
     } catch (_) {
@@ -76,14 +122,54 @@ class ApiService {
     }
   }
 
-  /// Backends vary; look for the usual message keys before giving up.
-  String? _messageFrom(dynamic data) {
-    if (data is! Map) return null;
-    for (final key in ['message', 'error', 'detail', 'msg']) {
-      final value = data[key];
-      if (value is String && value.trim().isNotEmpty) return value;
+  /// The standard envelope: `Status` 1 ok / 3 bounce / 4 logout, plus
+  /// `Message` and `Data`.
+  ApiResult<Map<String, dynamic>> _readCrm(
+    Map<String, dynamic> body,
+    int httpStatus,
+  ) {
+    final status = CrmStatus.parse(body['Status']);
+    final message = body['Message']?.toString();
+    final data = body['Data'];
+
+    if (status == CrmStatus.ok) {
+      return ApiResult.success(
+        data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{},
+        message: message,
+      );
     }
-    return null;
+
+    return ApiResult.failure(
+      (message?.trim().isNotEmpty ?? false)
+          ? message!
+          : AppStrings.somethingWentWrong,
+      statusCode: httpStatus,
+      status: status,
+    );
+  }
+
+  /// The Aadhaar OKYC envelope: lowercase `statusCode` and `data`.
+  ApiResult<Map<String, dynamic>> _readOkyc(
+    Map<String, dynamic> body,
+    int httpStatus,
+  ) {
+    final code = body['statusCode']?.toString();
+    final message = (body['message'] ?? body['Message'])?.toString();
+    final data = body['data'];
+
+    if (code == '200' || code == '1') {
+      return ApiResult.success(
+        data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{},
+        message: message,
+      );
+    }
+
+    return ApiResult.failure(
+      (message?.trim().isNotEmpty ?? false)
+          ? message!
+          : AppStrings.somethingWentWrong,
+      statusCode: httpStatus,
+    );
   }
 
   String _describe(DioException e) {
@@ -97,7 +183,12 @@ class ApiService {
       case DioExceptionType.cancel:
         return 'Request cancelled.';
       default:
-        return _messageFrom(e.response?.data) ?? AppStrings.somethingWentWrong;
+        final data = e.response?.data;
+        if (data is Map) {
+          final message = (data['Message'] ?? data['message'])?.toString();
+          if (message != null && message.trim().isNotEmpty) return message;
+        }
+        return AppStrings.somethingWentWrong;
     }
   }
 }

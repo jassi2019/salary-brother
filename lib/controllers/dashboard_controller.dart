@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 
 import '../models/user_model.dart';
 import '../services/api/api_endpoints.dart';
+import '../services/journey_service.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
 
@@ -23,16 +24,25 @@ class DashboardController extends GetxController {
     isLoading.value = true;
     errorMessage.value = '';
 
-    final result = await ApiService.instance.get(ApiEndpoints.profile);
+    final result = await ApiService.instance.post(
+      ApiEndpoints.getDashboardData,
+      body: {'profile_id': StorageService.profileId ?? ''},
+    );
     isLoading.value = false;
 
     if (!result.isSuccess) {
+      // Status 4 means the CRM ended the session; Status 3 sends the customer
+      // back to the dashboard, which is already where they are.
+      if (result.shouldLogout) {
+        await JourneyService.logout();
+        return;
+      }
       errorMessage.value = result.error ?? '';
       return;
     }
 
-    final data = result.data?['user'] ?? result.data;
-    if (data is Map<String, dynamic>) {
+    final data = result.data;
+    if (data != null && data.isNotEmpty) {
       user.value = UserModel.fromJson(data);
     }
   }

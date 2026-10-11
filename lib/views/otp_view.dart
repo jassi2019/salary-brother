@@ -78,7 +78,10 @@ class OtpView extends GetView<AuthController> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text('Enter 6-digit OTP', style: AppTextStyles.label),
+        const Text(
+          'Enter ${AuthController.otpLength}-digit OTP',
+          style: AppTextStyles.label,
+        ),
         Row(
           children: [
             Container(
@@ -114,7 +117,7 @@ class OtpView extends GetView<AuthController> {
   Widget _otpFields() {
     return PinCodeTextField(
       appContext: Get.context!,
-      length: 6,
+      length: AuthController.otpLength,
       controller: controller.otpController,
       keyboardType: TextInputType.number,
       autoFocus: true,
@@ -129,7 +132,7 @@ class OtpView extends GetView<AuthController> {
         shape: PinCodeFieldShape.box,
         borderRadius: BorderRadius.circular(AppSizes.radiusOtpBox),
         fieldHeight: AppSizes.otpBoxHeight,
-        fieldWidth: 48,
+        fieldWidth: 60,
         borderWidth: 1.5,
         activeColor: AppColors.primary,
         selectedColor: AppColors.primary,
@@ -160,7 +163,7 @@ class OtpView extends GetView<AuthController> {
             )
           else
             GestureDetector(
-              onTap: controller.sendOtp,
+              onTap: controller.resendOtp,
               child: const Text(
                 'Resend OTP',
                 style: TextStyle(

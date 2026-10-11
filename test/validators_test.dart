@@ -19,14 +19,20 @@ void main() {
   });
 
   group('Validators.otp', () {
-    test('accepts exactly six digits', () {
-      expect(Validators.otp('482913'), isNull);
+    test('accepts the CRM default of four digits', () {
+      expect(Validators.otp('4829'), isNull);
     });
 
     test('rejects short, long and non-numeric codes', () {
-      expect(Validators.otp('4829'), isNotNull);
-      expect(Validators.otp('4829134'), isNotNull);
-      expect(Validators.otp('48291a'), isNotNull);
+      expect(Validators.otp('482'), isNotNull);
+      expect(Validators.otp('48291'), isNotNull);
+      expect(Validators.otp('482a'), isNotNull);
+      expect(Validators.otp(''), isNotNull);
+    });
+
+    test('honours an explicit length', () {
+      expect(Validators.otp('482913', length: 6), isNull);
+      expect(Validators.otp('4829', length: 6), isNotNull);
     });
   });
 

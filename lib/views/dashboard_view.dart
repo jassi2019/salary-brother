@@ -267,7 +267,7 @@ class _ProfileProgressCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppSizes.radiusField),
       child: InkWell(
         borderRadius: BorderRadius.circular(AppSizes.radiusField),
-        onTap: () => Get.toNamed(RouteNames.kyc),
+        onTap: () => Get.toNamed(RouteNames.kycPan),
         child: Padding(
           padding: const EdgeInsets.all(AppSizes.m),
           child: Row(

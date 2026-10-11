@@ -70,7 +70,7 @@ class ApplyAmountView extends GetView<LoanController> {
               ),
               child: PrimaryButton(
                 label: 'Continue',
-                onPressed: () => Get.toNamed(RouteNames.kyc),
+                onPressed: () => Get.toNamed(RouteNames.kycPan),
               ),
             ),
           ],

@@ -23,5 +23,5 @@ class AppStrings {
   static const String noInternet = 'No internet connection';
   static const String somethingWentWrong = 'Something went wrong. Please try again.';
   static const String invalidMobile = 'Enter a valid 10-digit mobile number';
-  static const String invalidOtp = 'Enter the 6-digit OTP';
+  static const String invalidOtp = 'Enter the OTP sent to your mobile';
 }

@@ -1,31 +1,40 @@
-/// Every backend path in one place. Swap [baseUrl] per environment.
+/// Endpoint paths on the Salary Brother CRM.
+///
+/// These mirror the SalaryUncle CRM one-for-one — only the host differs.
+/// Only the paths the app actually calls are listed; the CRM's constant file
+/// carries a dozen more that nothing uses.
+///
+/// Write no leading slash: [ApiConfig.url] adds the separator, so a leading
+/// slash here produces a doubled `//` in the URL.
 class ApiEndpoints {
   ApiEndpoints._();
 
-  /// TODO: point this at the real Salary Brother backend.
-  static const String baseUrl = 'https://api.salarybrother.com/v1';
+  /// The one write endpoint. Login, OTP, PAN, every profile step and every
+  /// document upload post here; `event_name` in the body decides what the CRM
+  /// does with it. See [ApiEvents].
+  static const String saveCustomerProfile = 'saveCustomerProfile';
 
-  // auth
-  static const String sendOtp = '/auth/send-otp';
-  static const String verifyOtp = '/auth/verify-otp';
-  static const String logout = '/auth/logout';
+  /// Loan-application writes, also discriminated by `event_name`.
+  static const String saveLeadDetails = 'saveleadDetails';
 
-  // profile + application
-  static const String profile = '/user/profile';
-  static const String personalDetails = '/user/personal-details';
-  static const String employmentDetails = '/user/employment-details';
-  static const String bankDetails = '/user/bank-details';
+  // --- reads --------------------------------------------------------------
+  static const String getLeadList = 'getLeadList';
+  static const String getDashboardData = 'getDashboardData';
+  static const String getLeadDetail = 'getLeadDetail';
+  static const String mandatoryDocuments = 'mandatoryDocuments';
 
-  // kyc
-  static const String panVerify = '/kyc/pan';
-  static const String aadhaarInitiate = '/kyc/aadhaar/initiate';
-  static const String aadhaarVerify = '/kyc/aadhaar/verify';
+  // --- misc ---------------------------------------------------------------
+  static const String feedback = 'feedback';
+  static const String checkAppVersion = 'checkInstantAppVersion';
 
-  // loan
-  static const String loanLimit = '/loan/limit';
-  static const String loanQuote = '/loan/quote';
-  static const String loanApply = '/loan/apply';
-  static const String loanStatus = '/loan/status';
-  static const String loanHistory = '/loan/history';
-  static const String repaymentLink = '/loan/repayment-link';
+  // --- payments -----------------------------------------------------------
+  static const String generateRazorpayOrderId = 'generateRazorpayorderId';
+  static const String verifyRazorpayPaymentStatus =
+      'verifyRazorPayCheckPaymentStatus';
+
+  /// Aadhaar OKYC sits on its own module: these two paths skip the platform
+  /// prefix and answer with a different envelope (`statusCode` / `data`)
+  /// than everything else. Call them with [ApiConfig.unprefixedUrl].
+  static const String okycSendOtp = 'getOkycOtp';
+  static const String okycFetchData = 'fetchOkycData';
 }

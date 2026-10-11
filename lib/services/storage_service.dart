@@ -6,40 +6,86 @@ class StorageService {
 
   static late SharedPreferences _prefs;
 
-  static const String _keyToken = 'auth_token';
-  static const String _keyUserId = 'user_id';
+  static const String _keyToken = 'token';
+  static const String _keyProfileId = 'profile_id';
   static const String _keyMobile = 'mobile';
+  static const String _keyPancard = 'pancard';
+  static const String _keyStepStage = 'step_stage';
+  static const String _keyIsLogin = 'is_login';
+  static const String _keyFcmToken = 'fcm_token';
+  static const String _keyUtmSource = 'utm_source';
+  static const String _keyLatLong = 'lat_long';
   static const String _keyOnboarded = 'onboarding_seen';
 
   static Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
   }
 
-  // auth token
+  // --- session ------------------------------------------------------------
+
+  /// The CRM's `Data.app_login_token`, sent back as the `Authtoken` header.
   static String? get token => _prefs.getString(_keyToken);
   static Future<void> setToken(String value) =>
       _prefs.setString(_keyToken, value);
 
-  static bool get isLoggedIn => (token ?? '').isNotEmpty;
+  static bool get isLoggedIn =>
+      (_prefs.getBool(_keyIsLogin) ?? false) && (token ?? '').isNotEmpty;
+  static Future<void> setLoggedIn(bool value) =>
+      _prefs.setBool(_keyIsLogin, value);
 
-  // user
-  static String? get userId => _prefs.getString(_keyUserId);
-  static Future<void> setUserId(String value) =>
-      _prefs.setString(_keyUserId, value);
+  /// The CRM's `cust_profile_id`, required in the body of most calls.
+  static String? get profileId => _prefs.getString(_keyProfileId);
+  static Future<void> setProfileId(String value) =>
+      _prefs.setString(_keyProfileId, value);
 
   static String? get mobile => _prefs.getString(_keyMobile);
   static Future<void> setMobile(String value) =>
       _prefs.setString(_keyMobile, value);
 
-  // onboarding
+  static String? get pancard => _prefs.getString(_keyPancard);
+  static Future<void> setPancard(String value) =>
+      _prefs.setString(_keyPancard, value);
+
+  // --- journey ------------------------------------------------------------
+
+  /// The CRM's `Data.next_step`: the `event_name` the customer must complete
+  /// next. This is what decides which screen to open on launch.
+  static String? get stepStage => _prefs.getString(_keyStepStage);
+  static Future<void> setStepStage(String value) =>
+      _prefs.setString(_keyStepStage, value);
+
+  // --- device / attribution ----------------------------------------------
+
+  static String? get fcmToken => _prefs.getString(_keyFcmToken);
+  static Future<void> setFcmToken(String value) =>
+      _prefs.setString(_keyFcmToken, value);
+
+  static String? get utmSource => _prefs.getString(_keyUtmSource);
+  static Future<void> setUtmSource(String value) =>
+      _prefs.setString(_keyUtmSource, value);
+
+  static String get latLong => _prefs.getString(_keyLatLong) ?? '0.0,0.0';
+  static Future<void> setLatLong(String value) =>
+      _prefs.setString(_keyLatLong, value);
+
+  // --- onboarding ---------------------------------------------------------
+
   static bool get hasSeenOnboarding => _prefs.getBool(_keyOnboarded) ?? false;
   static Future<void> setOnboardingSeen() =>
       _prefs.setBool(_keyOnboarded, true);
 
-  /// Wipes the session on logout. Keeps the onboarding flag.
+  /// Wipes the session on logout, keeping the device-level flags that are not
+  /// tied to a customer.
   static Future<void> clearSession() async {
-    await _prefs.remove(_keyToken);
-    await _prefs.remove(_keyUserId);
-    await _prefs.remove(_keyMobile);
+    final fcm = fcmToken;
+    final utm = utmSource;
+    final onboarded = hasSeenOnboarding;
+
+    await _prefs.clear();
+
+    await setLoggedIn(false);
+    if (fcm != null) await setFcmToken(fcm);
+    if (utm != null) await setUtmSource(utm);
+    if (onboarded) await setOnboardingSeen();
   }
 }

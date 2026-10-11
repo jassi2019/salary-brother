@@ -5,7 +5,9 @@ import 'package:get/get.dart';
 
 import '../routes/route_names.dart';
 import '../services/api/api_endpoints.dart';
+import '../services/api/api_events.dart';
 import '../services/api_service.dart';
+import '../services/journey_service.dart';
 import '../services/storage_service.dart';
 import '../utils/app_strings.dart';
 import '../utils/validators.dart';
@@ -18,18 +20,25 @@ class AuthController extends GetxController {
   final isVerifying = false.obs;
   final termsAccepted = true.obs;
 
+  /// Set from the login response's `cust_profile_id`; every later call needs it.
+  final profileId = ''.obs;
+
   /// Seconds left before "Resend OTP" becomes tappable.
   final resendSeconds = 0.obs;
   Timer? _resendTimer;
 
   static const int _resendCooldown = 30;
 
+  /// The CRM issues 4-digit OTPs.
+  static const int otpLength = 4;
+
   String get mobile => mobileController.text.replaceAll(RegExp(r'\s+'), '');
 
   bool get canSendOtp =>
       Validators.mobile(mobile) == null && termsAccepted.value;
 
-  bool get canVerify => Validators.otp(otpController.text) == null;
+  bool get canVerify =>
+      Validators.otp(otpController.text, length: otpLength) == null;
 
   @override
   void onClose() {
@@ -52,8 +61,52 @@ class AuthController extends GetxController {
 
     isSendingOtp.value = true;
     final result = await ApiService.instance.post(
-      ApiEndpoints.sendOtp,
-      body: {'mobile': mobile},
+      ApiEndpoints.saveCustomerProfile,
+      event: ApiEvents.login,
+      auth: AuthMode.login,
+      body: {
+        'mobile': mobile,
+        'utm_source_test': StorageService.utmSource,
+      },
+    );
+    isSendingOtp.value = false;
+
+    if (!result.isSuccess) {
+      _toast(result.error ?? AppStrings.somethingWentWrong);
+      return;
+    }
+
+    final id = result.data?['cust_profile_id']?.toString();
+    if (id == null || id.isEmpty) {
+      // Without the profile id the OTP cannot be verified, so stop here
+      // rather than opening a screen that is guaranteed to fail.
+      _toast(AppStrings.somethingWentWrong);
+      return;
+    }
+
+    profileId.value = id;
+    await StorageService.setProfileId(id);
+
+    if (result.message != null) _toast(result.message!);
+
+    _startResendTimer();
+    if (Get.currentRoute != RouteNames.otp) {
+      Get.toNamed(RouteNames.otp);
+    }
+  }
+
+  Future<void> resendOtp() async {
+    if (resendSeconds.value > 0 || profileId.value.isEmpty) return;
+
+    isSendingOtp.value = true;
+    final result = await ApiService.instance.post(
+      ApiEndpoints.saveCustomerProfile,
+      event: ApiEvents.resendOtp,
+      auth: AuthMode.login,
+      body: {
+        'profile_id': profileId.value,
+        'mobile': mobile,
+      },
     );
     isSendingOtp.value = false;
 
@@ -63,22 +116,29 @@ class AuthController extends GetxController {
     }
 
     _startResendTimer();
-    if (Get.currentRoute != RouteNames.otp) {
-      Get.toNamed(RouteNames.otp);
-    }
   }
 
   Future<void> verifyOtp() async {
-    final error = Validators.otp(otpController.text);
+    final error = Validators.otp(otpController.text, length: otpLength);
     if (error != null) {
       _toast(error);
+      return;
+    }
+    if (profileId.value.isEmpty) {
+      _toast(AppStrings.somethingWentWrong);
       return;
     }
 
     isVerifying.value = true;
     final result = await ApiService.instance.post(
-      ApiEndpoints.verifyOtp,
-      body: {'mobile': mobile, 'otp': otpController.text},
+      ApiEndpoints.saveCustomerProfile,
+      event: ApiEvents.otpVerify,
+      auth: AuthMode.login,
+      body: {
+        'profile_id': profileId.value,
+        'otp': otpController.text,
+        'fcm': StorageService.fcmToken ?? '',
+      },
     );
     isVerifying.value = false;
 
@@ -87,7 +147,8 @@ class AuthController extends GetxController {
       return;
     }
 
-    final token = result.data?['token'] as String?;
+    final data = result.data ?? const <String, dynamic>{};
+    final token = data['app_login_token']?.toString();
     if (token == null || token.isEmpty) {
       _toast(AppStrings.somethingWentWrong);
       return;
@@ -95,13 +156,24 @@ class AuthController extends GetxController {
 
     await StorageService.setToken(token);
     await StorageService.setMobile(mobile);
-    final userId = result.data?['user_id'];
-    if (userId != null) {
-      await StorageService.setUserId('$userId');
+    await StorageService.setProfileId(profileId.value);
+    await StorageService.setLoggedIn(true);
+
+    final pancard = data['pancard']?.toString();
+    if (pancard != null && pancard.isNotEmpty) {
+      await StorageService.setPancard(pancard);
+    }
+
+    // The CRM decides where the customer goes next.
+    final nextStep = data['next_step']?.toString() ?? '';
+    if (nextStep.isNotEmpty) {
+      await StorageService.setStepStage(nextStep);
     }
 
     _resendTimer?.cancel();
-    Get.offAllNamed(RouteNames.dashboard);
+    if (result.message != null) _toast(result.message!);
+
+    JourneyService.goToStep(nextStep);
   }
 
   void _startResendTimer() {
