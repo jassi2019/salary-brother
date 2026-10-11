@@ -15,10 +15,13 @@ class BrandConfig {
   static const String iosAppId = '';
 
   // --- operating company --------------------------------------------------
-  // TODO: confirm the registered entity behind this brand. SalaryUncle's is
-  // Julania Finance Private Limited, but Salary Brother's corporate office is
-  // a different address, so the entity may differ too.
-  static const String companyName = '';
+  // Salary Brother is a brand operated through this entity, which is also the
+  // RBI-registered NBFC that sanctions and disburses the loans. Taken from the
+  // website's footer and terms — note "Finlease", not "Finance".
+  static const String companyName = 'Sanyog Finlease Private Limited';
+
+  /// RBI certificate of registration number, shown in the footer disclosure.
+  static const String rbiRegistrationNumber = 'B-14.02050';
 
   /// The corporate office, as published on the website.
   static const String companyAddress =
@@ -35,13 +38,22 @@ class BrandConfig {
 
   // --- legal --------------------------------------------------------------
   // RBI digital-lending rules require these to be reachable from the app.
-  // TODO: both paths are placeholders today — the pages do not exist yet.
-  // The app must not ship until they serve the real policies.
   static const String privacyPolicyUrl = '$website/privacy-policy';
   static const String termsUrl = '$website/terms-and-conditions';
+  static const String grievanceUrl = '$website/grievance';
 
-  /// TODO: the registered NBFC whose name must appear on the welcome screen.
-  static const String nbfcPartnerName = '[NBFC Partner Name]';
+  /// Grievance Redressal Officer, as named in the privacy policy.
+  static const String grievanceEmail = 'Grievance@salarybrother.com';
+
+  /// The lender of record. Same entity as [companyName] here: Salary Brother
+  /// is a brand of the NBFC rather than a third party's service provider.
+  static const String nbfcPartnerName = companyName;
+
+  /// The RBI disclosure for the welcome screen. Every lender in India must
+  /// name the registered entity behind the app.
+  static const String lenderDisclosure =
+      'Loans are offered by $companyName, an RBI-registered NBFC '
+      '(Reg. No. $rbiRegistrationNumber). $brandName is its brand.';
 
   // --- social -------------------------------------------------------------
   // TODO: no Salary Brother social profiles are linked from the site yet.
@@ -67,5 +79,5 @@ class BrandConfig {
   static bool get hasPlaceholders =>
       !hasAnyContact ||
       companyName.isEmpty ||
-      nbfcPartnerName.startsWith('[');
+      rbiRegistrationNumber.isEmpty;
 }

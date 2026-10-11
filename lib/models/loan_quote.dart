@@ -1,24 +1,77 @@
-/// Pricing config. These are the sample numbers from the design canvas —
-/// replace them with the lending partner's final terms before launch.
+/// Pricing config.
+///
+/// The defaults are the published Salary Brother terms: interest per day from
+/// 0.25% to 1% depending on the borrower's profile, a one-time 2% processing
+/// fee deducted before disbursal, and tenures of 7 to 30 days timed to the
+/// next salary credit.
+///
+/// [ratePerDay] and the limit are per-borrower, so the server decides them —
+/// use [fromJson] with the eligibility response rather than trusting these
+/// defaults in front of a customer.
 class LoanPricing {
   const LoanPricing({
     this.minAmount = 5000,
-    this.maxAmount = 35000,
+    this.maxAmount = 30000,
     this.stepAmount = 1000,
     this.ratePerDay = 1.0,
-    this.processingFeePct = 10.0,
+    this.processingFeePct = 2.0,
     this.gstPct = 18.0,
-    this.tenureOptions = const [7, 15, 30, 40],
+    this.tenureOptions = const [7, 15, 21, 30],
+    this.lateFee = 250,
   });
+
+  /// Builds the config from the CRM's eligibility payload, falling back to the
+  /// published defaults for anything it does not send.
+  factory LoanPricing.fromJson(Map<String, dynamic> json) {
+    const fallback = LoanPricing();
+
+    double? asDouble(Object? value) =>
+        value == null ? null : double.tryParse(value.toString());
+    int? asInt(Object? value) =>
+        value == null ? null : int.tryParse(value.toString().split('.').first);
+
+    final minTenure = asInt(json['min_loan_tenure']);
+    final maxTenure = asInt(json['max_loan_tenure']);
+
+    return LoanPricing(
+      minAmount: asInt(json['min_loan_amount']) ?? fallback.minAmount,
+      maxAmount: asInt(json['max_loan_amount']) ?? fallback.maxAmount,
+      ratePerDay: asDouble(json['interest_rate_per_day']) ?? fallback.ratePerDay,
+      processingFeePct:
+          asDouble(json['processing_fee_pct']) ?? fallback.processingFeePct,
+      tenureOptions: _tenuresBetween(minTenure, maxTenure) ??
+          fallback.tenureOptions,
+    );
+  }
+
+  /// Keeps the published tenure choices that the server's range allows, so the
+  /// picker never offers a tenure the CRM would reject.
+  static List<int>? _tenuresBetween(int? min, int? max) {
+    if (min == null && max == null) return null;
+
+    final low = min ?? 1;
+    final high = max ?? 36500;
+    final allowed = const LoanPricing()
+        .tenureOptions
+        .where((d) => d >= low && d <= high)
+        .toList();
+
+    // The range may not overlap the published choices at all; offer its
+    // endpoints rather than an empty picker.
+    if (allowed.isEmpty) return {low, high}.toList()..sort();
+    return allowed;
+  }
 
   final int minAmount;
   final int maxAmount;
   final int stepAmount;
 
-  /// Interest charged per day, in percent of the principal.
+  /// Interest charged per day, in percent of the principal. Published range is
+  /// 0.25% to 1%, set per borrower.
   final double ratePerDay;
 
-  /// Processing fee, in percent of the principal. Deducted at disbursal.
+  /// One-time processing fee, in percent of the principal. Deducted before the
+  /// money lands.
   final double processingFeePct;
 
   /// GST charged on the processing fee.
@@ -26,14 +79,18 @@ class LoanPricing {
 
   final List<int> tenureOptions;
 
-  LoanPricing copyWith({int? maxAmount}) => LoanPricing(
+  /// Flat late fee in rupees, charged once. It does not accrue per day.
+  final int lateFee;
+
+  LoanPricing copyWith({int? maxAmount, double? ratePerDay}) => LoanPricing(
         minAmount: minAmount,
         maxAmount: maxAmount ?? this.maxAmount,
         stepAmount: stepAmount,
-        ratePerDay: ratePerDay,
+        ratePerDay: ratePerDay ?? this.ratePerDay,
         processingFeePct: processingFeePct,
         gstPct: gstPct,
         tenureOptions: tenureOptions,
+        lateFee: lateFee,
       );
 }
 

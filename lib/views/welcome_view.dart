@@ -41,9 +41,7 @@ class WelcomeView extends StatelessWidget {
               _loginPrompt(),
               const SizedBox(height: AppSizes.m),
               const Text(
-                'Loans are offered by ${BrandConfig.nbfcPartnerName}, an '
-                'RBI-registered NBFC. ${BrandConfig.brandName} is its lending '
-                'service provider.',
+                BrandConfig.lenderDisclosure,
                 textAlign: TextAlign.center,
                 style: AppTextStyles.legal,
               ),

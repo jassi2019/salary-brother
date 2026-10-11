@@ -53,12 +53,34 @@ void main() {
     });
   });
 
+  group('lender disclosure', () {
+    test('names the registered entity, not the brand', () {
+      expect(BrandConfig.companyName, 'Sanyog Finlease Private Limited');
+      // "Finlease", not "Finance" — a different company exists under that name.
+      expect(BrandConfig.companyName, contains('Finlease'));
+      expect(BrandConfig.nbfcPartnerName, BrandConfig.companyName);
+    });
+
+    test('carries the RBI registration number', () {
+      expect(BrandConfig.rbiRegistrationNumber, 'B-14.02050');
+    });
+
+    test('the disclosure sentence names the entity, the registration and '
+        'the brand', () {
+      const text = BrandConfig.lenderDisclosure;
+
+      expect(text, contains(BrandConfig.companyName));
+      expect(text, contains(BrandConfig.rbiRegistrationNumber));
+      expect(text, contains(BrandConfig.brandName));
+      expect(text, contains('RBI-registered NBFC'));
+      // No leftover bracketed placeholder.
+      expect(text, isNot(contains('[')));
+    });
+  });
+
   group('release gate', () {
-    test('hasPlaceholders is true while the NBFC partner is unnamed', () {
-      // Guards the release check itself: once the partner and the registered
-      // entity are filled in, this test must be updated to expect false.
-      expect(BrandConfig.nbfcPartnerName, startsWith('['));
-      expect(BrandConfig.hasPlaceholders, isTrue);
+    test('nothing launch-blocking is left blank', () {
+      expect(BrandConfig.hasPlaceholders, isFalse);
     });
   });
 }
