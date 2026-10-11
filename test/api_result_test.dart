@@ -10,9 +10,14 @@ void main() {
       expect(CrmStatus.parse(4), CrmStatus.logout);
     });
 
+    test('status 2 is a rejection the customer can correct', () {
+      // A wrong OTP. Verified against the live CRM: it answers
+      // Status 2 "Kindly enter the correct OTP or resend/generate a new one."
+      expect(CrmStatus.parse(2), CrmStatus.rejected);
+    });
+
     test('anything unrecognised is a failure, not a success', () {
       expect(CrmStatus.parse(0), CrmStatus.failed);
-      expect(CrmStatus.parse(2), CrmStatus.failed);
       expect(CrmStatus.parse(null), CrmStatus.failed);
       expect(CrmStatus.parse(''), CrmStatus.failed);
       expect(CrmStatus.parse('ok'), CrmStatus.failed);
@@ -109,6 +114,26 @@ void main() {
 
       expect(result.requiresRedirect, isTrue);
       expect(result.shouldLogout, isFalse);
+    });
+  });
+
+  group('a rejected input', () {
+    test('keeps the customer where they are', () {
+      // A wrong OTP must not log anyone out or bounce them elsewhere —
+      // sending a bad Auth header used to produce Status 4 and did exactly
+      // that, which is what made login look like it was looping.
+      const result = ApiResult<Map<String, dynamic>>.failure(
+        'Kindly enter the correct OTP or resend/generate a new one.',
+        status: CrmStatus.rejected,
+      );
+
+      expect(result.isSuccess, isFalse);
+      expect(result.shouldLogout, isFalse);
+      expect(result.shouldBounceToDashboard, isFalse);
+      expect(result.requiresRedirect, isFalse);
+      // It is still the CRM talking, so the message is safe to show.
+      expect(result.isCrmRefusal, isTrue);
+      expect(result.isTransportFailure, isFalse);
     });
   });
 }

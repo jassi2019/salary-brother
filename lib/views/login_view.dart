@@ -18,71 +18,64 @@ class LoginView extends GetView<AuthController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.white,
+      // The keyboard does not resize the body, so the layout cannot be
+      // squeezed into an overflow and the screen needs no scrolling. The
+      // field sits in the upper half, well clear of the keyboard; the button
+      // below it goes under the keyboard, which is the normal pattern — the
+      // keyboard's own "done" is used, or it is dismissed first.
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
-        // The keyboard takes ~300px. Without a scroll view the Column's
-        // Spacer collapses, the content overflows and the field's text is
-        // laid out off-screen — which looked like the digits not appearing
-        // until the keyboard was dismissed.
-        child: LayoutBuilder(
-          builder: (context, constraints) => SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(
-              AppSizes.screenPadding,
-              AppSizes.screenPadding,
-              AppSizes.screenPadding,
-              24,
-            ),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight - 44),
-              child: IntrinsicHeight(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        SquareIconButton(
-                          icon: Icons.chevron_left_rounded,
-                          tooltip: 'Back',
-                          background: AppColors.surface,
-                          onPressed: _goBack,
-                        ),
-                        TextButton(
-                          onPressed: () => Get.toNamed(RouteNames.support),
-                          child: const Text('Need help?'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSizes.xxl),
-                    const Text(
-                      'Verify your mobile number',
-                      style: AppTextStyles.h2,
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      "We'll text you a one-time password. Use the number "
-                      'linked to your bank account.',
-                      style: AppTextStyles.bodyMuted,
-                    ),
-                    const SizedBox(height: AppSizes.xxl),
-                    const Text('Mobile number', style: AppTextStyles.label),
-                    const SizedBox(height: AppSizes.s),
-                    _mobileField(),
-                    const Spacer(),
-                    const SizedBox(height: AppSizes.xxl),
-                    _termsCheckbox(),
-                    const SizedBox(height: 18),
-                    Obx(
-                      () => PrimaryButton(
-                        label: 'Send OTP',
-                        isLoading: controller.isSendingOtp.value,
-                        onPressed:
-                            controller.canSendOtp ? controller.sendOtp : null,
-                      ),
-                    ),
-                  ],
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSizes.screenPadding,
+            AppSizes.screenPadding,
+            AppSizes.screenPadding,
+            24,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  SquareIconButton(
+                    icon: Icons.chevron_left_rounded,
+                    tooltip: 'Back',
+                    background: AppColors.surface,
+                    onPressed: _goBack,
+                  ),
+                  TextButton(
+                    onPressed: () => Get.toNamed(RouteNames.support),
+                    child: const Text('Need help?'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSizes.xxl),
+              const Text(
+                'Verify your mobile number',
+                style: AppTextStyles.h2,
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                "We'll text you a one-time password. Use the number "
+                'linked to your bank account.',
+                style: AppTextStyles.bodyMuted,
+              ),
+              const SizedBox(height: AppSizes.xxl),
+              const Text('Mobile number', style: AppTextStyles.label),
+              const SizedBox(height: AppSizes.s),
+              _mobileField(),
+              const Spacer(),
+              _termsCheckbox(),
+              const SizedBox(height: 18),
+              Obx(
+                () => PrimaryButton(
+                  label: 'Send OTP',
+                  isLoading: controller.isSendingOtp.value,
+                  onPressed: controller.canSendOtp ? controller.sendOtp : null,
                 ),
               ),
-            ),
+            ],
           ),
         ),
       ),

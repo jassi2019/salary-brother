@@ -104,8 +104,7 @@ class SupportView extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AppSizes.m),
-              const Text('Corporate office',
-                  style: AppTextStyles.sectionTitle),
+              const Text('Corporate office', style: AppTextStyles.sectionTitle),
             ],
           ),
           const SizedBox(height: AppSizes.m),
@@ -126,9 +125,8 @@ class SupportView extends StatelessWidget {
   }
 
   Future<void> _launch(Uri uri, {bool external = false}) async {
-    final mode = external
-        ? LaunchMode.externalApplication
-        : LaunchMode.platformDefault;
+    final mode =
+        external ? LaunchMode.externalApplication : LaunchMode.platformDefault;
 
     if (!await launchUrl(uri, mode: mode)) {
       Get.snackbar(

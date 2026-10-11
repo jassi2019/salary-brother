@@ -20,70 +20,61 @@ class OtpView extends GetView<AuthController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.white,
+      // Same as the login screen: the keyboard does not resize the body, so
+      // there is nothing to squeeze and nothing to scroll.
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
-        // Scrollable for the same reason as the login screen: the OTP field
-        // autofocuses, and without this the keyboard squeezes the Column
-        // until its content is laid out off-screen.
-        child: LayoutBuilder(
-          builder: (context, constraints) => SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(
-              AppSizes.screenPadding,
-              AppSizes.screenPadding,
-              AppSizes.screenPadding,
-              24,
-            ),
-            child: ConstrainedBox(
-              constraints:
-                  BoxConstraints(minHeight: constraints.maxHeight - 44),
-              child: IntrinsicHeight(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        SquareIconButton(
-                          icon: Icons.chevron_left_rounded,
-                          tooltip: 'Back',
-                          background: AppColors.surface,
-                          onPressed: Get.back<void>,
-                        ),
-                        TextButton(
-                          onPressed: () => Get.toNamed(RouteNames.support),
-                          child: const Text('Need help?'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSizes.xxl),
-                    const Text('Enter the OTP', style: AppTextStyles.h2),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Sent to +91 ${Formatters.mobile(controller.mobile)}. '
-                      'It expires in '
-                      '${SmsConfig.otpValidity.inMinutes} minutes.',
-                      style: AppTextStyles.bodyMuted,
-                    ),
-                    const SizedBox(height: AppSizes.xxl),
-                    _otpHeader(),
-                    const SizedBox(height: AppSizes.m),
-                    _otpFields(),
-                    const SizedBox(height: AppSizes.m),
-                    _resendRow(),
-                    const Spacer(),
-                    const SizedBox(height: AppSizes.xxl),
-                    Obx(
-                      () => PrimaryButton(
-                        label: 'Verify & continue',
-                        showIcon: false,
-                        isLoading: controller.isVerifying.value,
-                        onPressed:
-                            controller.canVerify ? controller.verifyOtp : null,
-                      ),
-                    ),
-                  ],
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSizes.screenPadding,
+            AppSizes.screenPadding,
+            AppSizes.screenPadding,
+            24,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  SquareIconButton(
+                    icon: Icons.chevron_left_rounded,
+                    tooltip: 'Back',
+                    background: AppColors.surface,
+                    onPressed: Get.back<void>,
+                  ),
+                  TextButton(
+                    onPressed: () => Get.toNamed(RouteNames.support),
+                    child: const Text('Need help?'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSizes.xxl),
+              const Text('Enter the OTP', style: AppTextStyles.h2),
+              const SizedBox(height: 10),
+              Text(
+                'Sent to +91 ${Formatters.mobile(controller.mobile)}. '
+                'It expires in '
+                '${SmsConfig.otpValidity.inMinutes} minutes.',
+                style: AppTextStyles.bodyMuted,
+              ),
+              const SizedBox(height: AppSizes.xxl),
+              _otpHeader(),
+              const SizedBox(height: AppSizes.m),
+              _otpFields(),
+              const SizedBox(height: AppSizes.m),
+              _resendRow(),
+              const Spacer(),
+              const SizedBox(height: AppSizes.xxl),
+              Obx(
+                () => PrimaryButton(
+                  label: 'Verify & continue',
+                  showIcon: false,
+                  isLoading: controller.isVerifying.value,
+                  onPressed: controller.canVerify ? controller.verifyOtp : null,
                 ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -169,9 +160,16 @@ class OtpView extends GetView<AuthController> {
     return Obx(() {
       final waiting = controller.resendSeconds.value > 0;
 
-      return Row(
+      // Wrap, not Row: two unbounded texts side by side overflow at a large
+      // text scale, and inside IntrinsicHeight that assert takes the whole
+      // screen down to blank white.
+      return Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          Text("Didn't get it? ", style: AppTextStyles.caption.copyWith(fontSize: 14)),
+          Text(
+            "Didn't get it? ",
+            style: AppTextStyles.caption.copyWith(fontSize: 14),
+          ),
           if (waiting)
             Text(
               'Resend in ${controller.resendLabel}',

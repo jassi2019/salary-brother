@@ -98,36 +98,13 @@ class _WelcomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    // The design has an EN/हिंदी toggle here. Dropped until the app is
+    // actually translated — it had no handler and switched nothing.
+    return const SizedBox(
       height: AppSizes.touchTarget,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const BrandLogo(),
-          Container(
-            height: AppSizes.touchTarget,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(AppSizes.radiusPill),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.language_rounded, size: 16, color: AppColors.ink),
-                SizedBox(width: 6),
-                Text(
-                  'EN · हिंदी',
-                  style: TextStyle(
-                    fontFamily: AppTextStyles.fontBody,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.ink,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          BrandLogo(),
         ],
       ),
     );

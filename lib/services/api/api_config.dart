@@ -71,16 +71,20 @@ class ApiConfig {
   // plus the customer's `Authtoken` after login. Which endpoint takes which is
   // irregular — see the table on `AuthMode`.
   //
-  // TODO: replace all three placeholders with the Salary Brother CRM's own
-  // keys. They are per-product; do not reuse another product's. Until they are
-  // filled in, every request will be rejected.
+  // TODO: fill these in when the CRM issues this app's keys.
+  //
+  // Verified against the live CRM on 2026-10-11: it accepts a request with no
+  // `Auth` header at all, but answers `Status: 4 "Unauthorized Request!"` to a
+  // wrong one. So a placeholder is worse than nothing — and because Status 4
+  // means "log out", sending one bounced the customer back to login. The
+  // header is therefore omitted while these are empty.
 
   /// The platform-dependent key (`apiHeader1` upstream).
-  static const String _platformAuthKeyAndroid = 'REPLACE_ME_ANDROID_AUTH_KEY';
-  static const String _platformAuthKeyIos = 'REPLACE_ME_IOS_AUTH_KEY';
+  static const String _platformAuthKeyAndroid = '';
+  static const String _platformAuthKeyIos = '';
 
   /// The single static key, same on every platform (`apiHeader` upstream).
-  static const String _generalAuthKey = 'REPLACE_ME_GENERAL_AUTH_KEY';
+  static const String _generalAuthKey = '';
 
   static const Map<String, String> _jsonHeaders = {
     'Content-Type': 'application/json',
@@ -89,17 +93,17 @@ class ApiConfig {
 
   /// Headers carrying the platform-dependent key. Used by login, OTP, resend,
   /// payment verification, the version check and `fetchOkycData`.
-  static Map<String, String> get loginHeaders => {
-        ..._jsonHeaders,
-        'Auth':
-            GetPlatform.isIOS ? _platformAuthKeyIos : _platformAuthKeyAndroid,
-      };
+  static Map<String, String> get loginHeaders =>
+      _withAuth(GetPlatform.isIOS ? _platformAuthKeyIos : _platformAuthKeyAndroid);
 
   /// Headers carrying the general static key. Used by `getOkycOtp` and
   /// `feedback`.
-  static Map<String, String> get staticHeaders => {
+  static Map<String, String> get staticHeaders => _withAuth(_generalAuthKey);
+
+  /// Adds the `Auth` header only when there is a real key to send.
+  static Map<String, String> _withAuth(String key) => {
         ..._jsonHeaders,
-        'Auth': _generalAuthKey,
+        if (key.isNotEmpty) 'Auth': key,
       };
 
   /// Headers for endpoints that need the logged-in customer's token.
@@ -108,10 +112,11 @@ class ApiConfig {
         'Authtoken': token,
       };
 
-  /// True while the auth keys are still placeholders, so the app can fail
-  /// loudly in debug instead of silently 401-ing.
+  /// True while this app has no `Auth` keys of its own. Requests still work —
+  /// the header is simply left off — but the CRM is treating them as
+  /// unauthenticated, which is not what should ship.
   static bool get hasPlaceholderKeys =>
-      _generalAuthKey.startsWith('REPLACE_ME') ||
-      _platformAuthKeyAndroid.startsWith('REPLACE_ME') ||
-      _platformAuthKeyIos.startsWith('REPLACE_ME');
+      _generalAuthKey.isEmpty ||
+      _platformAuthKeyAndroid.isEmpty ||
+      _platformAuthKeyIos.isEmpty;
 }

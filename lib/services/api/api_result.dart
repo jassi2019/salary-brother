@@ -3,6 +3,10 @@ enum CrmStatus {
   /// `1` — the call succeeded.
   ok,
 
+  /// `2` — the input was rejected: a wrong OTP, a failed validation. The
+  /// customer stays where they are and corrects it.
+  rejected,
+
   /// `3` — the customer should be bounced back to the dashboard.
   bounceToDashboard,
 
@@ -14,6 +18,7 @@ enum CrmStatus {
 
   static CrmStatus parse(dynamic raw) => switch (raw.toString()) {
         '1' => CrmStatus.ok,
+        '2' => CrmStatus.rejected,
         '3' => CrmStatus.bounceToDashboard,
         '4' => CrmStatus.logout,
         _ => CrmStatus.failed,

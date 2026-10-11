@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:salary_brother/bindings/auth_binding.dart';
+import 'package:salary_brother/controllers/auth_controller.dart';
 import 'package:salary_brother/routes/app_pages.dart';
 import 'package:salary_brother/routes/route_names.dart';
 import 'package:salary_brother/views/login_view.dart';
+import 'package:salary_brother/views/otp_view.dart';
 import 'package:salary_brother/views/welcome_view.dart';
 
 /// Wraps a screen in the minimum GetX app it needs to build.
@@ -139,6 +141,39 @@ void main() {
           reason: 'a TextButton on the login screen has no callback',
         );
       }
+    });
+  });
+
+  group('OtpView', () {
+    testWidgets('builds without throwing', (tester) async {
+      // Regression: the screen came up blank white on a device.
+      _screen(tester);
+      AuthBinding().dependencies();
+      Get.find<AuthController>().mobileController.text = '9876543210';
+
+      await tester.pumpWidget(_host(const OtpView()));
+      // Not pumpAndSettle: the OTP field's cursor animates forever.
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Enter the OTP'), findsOneWidget);
+    });
+
+    testWidgets('builds when reached by navigation, as on the device',
+        (tester) async {
+      _screen(tester);
+      AuthBinding().dependencies();
+      Get.find<AuthController>().mobileController.text = '9876543210';
+
+      await tester.pumpWidget(_host(const LoginView()));
+      await tester.pumpAndSettle();
+
+      Get.toNamed(RouteNames.otp);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Enter the OTP'), findsOneWidget);
     });
   });
 }

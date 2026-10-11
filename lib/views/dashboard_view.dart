@@ -78,7 +78,8 @@ class _Greeting extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_greetingFor(DateTime.now()), style: AppTextStyles.caption),
+                Text(_greetingFor(DateTime.now()),
+                    style: AppTextStyles.caption),
                 const SizedBox(height: 2),
                 Text(
                   user?.name ?? 'Welcome',
@@ -244,9 +245,8 @@ class _ProfileProgressCard extends StatelessWidget {
                     child: Container(
                       height: 6,
                       decoration: BoxDecoration(
-                        color: i < done
-                            ? AppColors.primary
-                            : AppColors.borderSoft,
+                        color:
+                            i < done ? AppColors.primary : AppColors.borderSoft,
                         borderRadius: BorderRadius.circular(3),
                       ),
                     ),
@@ -484,17 +484,15 @@ class _BottomNav extends StatelessWidget {
         color: AppColors.white,
         border: Border(top: BorderSide(color: AppColors.borderSoft)),
       ),
+      // Only the tabs whose screens exist. Loans, Repay and Profile have no
+      // route registered yet; add each tab back with its screen, rather than
+      // shipping a bar where half the taps do nothing.
       child: Obx(
         () => BottomNavigationBar(
           currentIndex: controller.tabIndex.value,
           onTap: (index) {
             controller.tabIndex.value = index;
-            switch (index) {
-              case 2:
-                Get.toNamed(RouteNames.repay);
-              case 3:
-                Get.toNamed(RouteNames.profile);
-            }
+            if (index == 1) Get.toNamed(RouteNames.support);
           },
           items: const [
             BottomNavigationBarItem(
@@ -503,16 +501,8 @@ class _BottomNav extends StatelessWidget {
               label: 'Home',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.description_outlined),
-              label: 'Loans',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.replay_rounded),
-              label: 'Repay',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline_rounded),
-              label: 'Profile',
+              icon: Icon(Icons.headset_mic_outlined),
+              label: 'Support',
             ),
           ],
         ),

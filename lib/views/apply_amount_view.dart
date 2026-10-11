@@ -103,7 +103,8 @@ class _AmountPicker extends StatelessWidget {
               children: [
                 _StepperButton(
                   icon: Icons.remove_rounded,
-                  tooltip: 'Decrease by ${Formatters.rupees(pricing.stepAmount)}',
+                  tooltip:
+                      'Decrease by ${Formatters.rupees(pricing.stepAmount)}',
                   filled: false,
                   onPressed: controller.amount.value > pricing.minAmount
                       ? controller.decrement
@@ -115,7 +116,8 @@ class _AmountPicker extends StatelessWidget {
                 ),
                 _StepperButton(
                   icon: Icons.add_rounded,
-                  tooltip: 'Increase by ${Formatters.rupees(pricing.stepAmount)}',
+                  tooltip:
+                      'Increase by ${Formatters.rupees(pricing.stepAmount)}',
                   filled: true,
                   onPressed: controller.amount.value < pricing.maxAmount
                       ? controller.increment
@@ -128,10 +130,10 @@ class _AmountPicker extends StatelessWidget {
               value: controller.amount.value.toDouble(),
               min: pricing.minAmount.toDouble(),
               max: pricing.maxAmount.toDouble(),
-              divisions: ((pricing.maxAmount - pricing.minAmount) /
-                      pricing.stepAmount)
-                  .round()
-                  .clamp(1, 1000),
+              divisions:
+                  ((pricing.maxAmount - pricing.minAmount) / pricing.stepAmount)
+                      .round()
+                      .clamp(1, 1000),
               label: Formatters.rupees(controller.amount.value),
               onChanged: (value) => controller.setAmount(value.round()),
             ),
