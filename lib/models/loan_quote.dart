@@ -11,7 +11,7 @@
 class LoanPricing {
   const LoanPricing({
     this.minAmount = 5000,
-    this.maxAmount = 30000,
+    this.maxAmount = 100000,
     this.stepAmount = 1000,
     this.ratePerDay = 1.0,
     this.processingFeePct = 2.0,

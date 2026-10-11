@@ -13,7 +13,7 @@ void main() {
       expect(pricing.lateFee, 250);
       expect(pricing.tenureOptions.first, 7);
       expect(pricing.tenureOptions.last, 30);
-      expect(pricing.maxAmount, 30000);
+      expect(pricing.maxAmount, 100000);
     });
   });
 

@@ -35,12 +35,22 @@ class LoanController extends GetxController {
     return (amount.value - p.minAmount) / span;
   }
 
+  /// Three shortcuts: two round amounts from the lower part of the range, and
+  /// the limit itself. Derived from the range so they stay sensible whether
+  /// the limit is ₹30,000 or ₹1,00,000.
   List<int> get presets {
     final p = pricing.value;
-    return [10000, 20000, p.maxAmount]
-        .where((v) => v >= p.minAmount && v <= p.maxAmount)
-        .toSet()
-        .toList()
+    final span = p.maxAmount - p.minAmount;
+
+    int round(int value) =>
+        ((value / p.stepAmount).round() * p.stepAmount)
+            .clamp(p.minAmount, p.maxAmount);
+
+    return <int>{
+      round(p.minAmount + (span * 0.25).round()),
+      round(p.minAmount + (span * 0.5).round()),
+      p.maxAmount,
+    }.toList()
       ..sort();
   }
 

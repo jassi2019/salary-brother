@@ -77,4 +77,29 @@ void main() {
       expect(OtpParser.extract(sixDigits), isNull);
     });
   });
+
+  group('the gateway signs with JULANA today', () {
+    test('a real live message parses', () {
+      // Verbatim from a device, 2026-10-11. The gateway is signing with the
+      // operating company's name instead of the registered sender ID; until
+      // that is fixed at the gateway, these must still auto-fill.
+      const live = 'Use OTP 6055 to log in to your Salary Brother account. '
+          'This code will expire in 5 minutes. Keep it safe. JULANA';
+
+      expect(OtpParser.extract(live), '6055');
+    });
+
+    test('both sender IDs are accepted', () {
+      expect(SmsConfig.acceptedSenderIds, contains('SYFNSB'));
+      expect(SmsConfig.acceptedSenderIds, contains('JULANA'));
+    });
+
+    test('a third party is still rejected', () {
+      // Widening the sender list must not make the parser accept anyone.
+      const other =
+          'Use OTP 5566 to log in to your SomeOtherApp account. ABCDEF';
+
+      expect(OtpParser.extract(other), isNull);
+    });
+  });
 }

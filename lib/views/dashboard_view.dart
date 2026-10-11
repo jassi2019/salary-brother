@@ -89,8 +89,9 @@ class _Greeting extends StatelessWidget {
               ],
             ),
           ),
-          // TODO: show this once there is a notifications screen behind it.
-          // An enabled button that does nothing reads as a broken app.
+          // TODO: a notifications button belongs here once there is a
+          // screen behind it. Support in the meantime, rather than an
+          // enabled button that does nothing.
           SquareIconButton(
             icon: Icons.headset_mic_outlined,
             tooltip: 'Support',
@@ -322,7 +323,7 @@ class _ProfileProgressCard extends StatelessWidget {
   }
 }
 
-/// The four circular shortcuts: calculator, repay, history, support.
+/// The four shortcut tiles: calculator, repay, history, support.
 class _QuickActions extends StatelessWidget {
   const _QuickActions();
 
@@ -371,10 +372,15 @@ class _QuickAction extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(AppSizes.radiusCardSmall),
         onTap: route == null ? null : () => Get.toNamed(route!),
+        // stretch, or the Column hands the tile a loose width and it shrinks
+        // to the icon — at which point the 18px radius exceeds half the width
+        // and the box renders as a tall capsule instead of a rounded square.
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Container(
               height: 58,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: AppColors.white,
                 borderRadius: BorderRadius.circular(AppSizes.radiusCardSmall),
@@ -385,6 +391,9 @@ class _QuickAction extends StatelessWidget {
             const SizedBox(height: AppSizes.s),
             Text(
               label,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontFamily: AppTextStyles.fontBody,
                 fontSize: 12,
@@ -457,6 +466,10 @@ class _HowItWorks extends StatelessWidget {
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           height: 1.35,
+                          // Without even leading the extra line height all
+                          // goes above the text, and descenders on the last
+                          // line get clipped.
+                          leadingDistribution: TextLeadingDistribution.even,
                           color: AppColors.primaryDeep,
                         ),
                       ),
@@ -490,9 +503,14 @@ class _BottomNav extends StatelessWidget {
       child: Obx(
         () => BottomNavigationBar(
           currentIndex: controller.tabIndex.value,
-          onTap: (index) {
+          onTap: (index) async {
+            if (index == 0) return;
+
             controller.tabIndex.value = index;
-            if (index == 1) Get.toNamed(RouteNames.support);
+            await Get.toNamed(RouteNames.support);
+            // Back from support: Home is on screen again, so the bar must
+            // stop highlighting Support.
+            controller.tabIndex.value = 0;
           },
           items: const [
             BottomNavigationBarItem(

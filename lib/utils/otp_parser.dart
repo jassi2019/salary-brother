@@ -30,7 +30,8 @@ class OtpParser {
   static String? extract(String? body) {
     final text = (body ?? '').trim();
     if (text.isEmpty) return null;
-    if (!text.toUpperCase().contains(SmsConfig.senderId)) return null;
+    final upper = text.toUpperCase();
+    if (!SmsConfig.acceptedSenderIds.any(upper.contains)) return null;
 
     for (final pattern in [_templated, _afterKeyword]) {
       final match = pattern.firstMatch(text);

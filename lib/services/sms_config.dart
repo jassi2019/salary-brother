@@ -19,8 +19,19 @@
 class SmsConfig {
   SmsConfig._();
 
-  /// DLT-registered sender ID, as it appears at the end of every message.
+  /// The DLT-registered sender ID this app expects at the end of every
+  /// message.
   static const String senderId = 'SYFNSB';
+
+  /// Sender IDs the parser will accept.
+  ///
+  /// The gateway is currently signing live OTPs `JULANA` — the operating
+  /// company's name — rather than the registered [senderId]. That is a
+  /// gateway-side misconfiguration and should be corrected there; until it
+  /// is, rejecting those messages would break auto-fill for every real
+  /// customer.
+  // TODO: drop 'JULANA' once the gateway signs with SYFNSB.
+  static const List<String> acceptedSenderIds = [senderId, 'JULANA'];
 
   /// DLT template id registered for the login OTP.
   static const String otpTemplateId = '1777178866858679772';

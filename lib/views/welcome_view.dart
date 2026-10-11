@@ -96,11 +96,7 @@ class _WelcomeHeader extends StatelessWidget {
     // actually translated — it had no handler and switched nothing.
     return const SizedBox(
       height: AppSizes.touchTarget,
-      child: Row(
-        children: [
-          BrandLogo(),
-        ],
-      ),
+      child: Center(child: BrandLogo()),
     );
   }
 }

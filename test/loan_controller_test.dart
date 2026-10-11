@@ -20,14 +20,14 @@ void main() {
       controller.decrement();
       expect(controller.amount.value, 5000);
 
-      controller.setAmount(30000);
+      controller.setAmount(100000);
       controller.increment();
-      expect(controller.amount.value, 30000);
+      expect(controller.amount.value, 100000);
     });
 
     test('an out-of-range amount is clamped, not accepted', () {
       controller.setAmount(999999);
-      expect(controller.amount.value, 30000);
+      expect(controller.amount.value, 100000);
 
       controller.setAmount(100);
       expect(controller.amount.value, 5000);
@@ -45,25 +45,25 @@ void main() {
       controller.setAmount(5000);
       expect(controller.fillFraction, 0);
 
-      controller.setAmount(30000);
+      controller.setAmount(100000);
       expect(controller.fillFraction, 1);
 
       // Mid-range. The amount snaps to the 1,000 step first, so allow for
       // that rather than pinning an exact fraction.
-      controller.setAmount(17500);
+      controller.setAmount(52500);
       expect(controller.fillFraction, closeTo(0.5, 0.03));
     });
 
     test('a new limit raises the ceiling and keeps the amount valid', () {
-      controller.setAmount(30000);
-      controller.applyLimit(50000);
+      controller.setAmount(100000);
+      controller.applyLimit(150000);
 
-      expect(controller.pricing.value.maxAmount, 50000);
-      expect(controller.amount.value, 30000);
+      expect(controller.pricing.value.maxAmount, 150000);
+      expect(controller.amount.value, 100000);
     });
 
     test('a lower limit pulls an over-limit amount back down', () {
-      controller.setAmount(30000);
+      controller.setAmount(100000);
       controller.applyLimit(15000);
 
       expect(controller.pricing.value.maxAmount, 15000);
@@ -72,7 +72,7 @@ void main() {
 
     test('a limit below the floor is ignored', () {
       controller.applyLimit(1000);
-      expect(controller.pricing.value.maxAmount, 30000);
+      expect(controller.pricing.value.maxAmount, 100000);
     });
 
     test('presets never exceed the current limit', () {
