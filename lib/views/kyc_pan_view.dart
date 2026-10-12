@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../controllers/kyc_controller.dart';
-import '../routes/route_names.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_sizes.dart';
 import '../utils/app_text_styles.dart';
+import '../utils/brand_config.dart';
 import '../widgets/app_text_field.dart';
+import '../widgets/app_toast.dart';
 import '../widgets/journey_scaffold.dart';
 import '../widgets/primary_button.dart';
 
@@ -102,7 +104,7 @@ class KycPanView extends GetView<KycController> {
                   WidgetSpan(
                     alignment: PlaceholderAlignment.middle,
                     child: GestureDetector(
-                      onTap: () => Get.toNamed(RouteNames.privacyPolicy),
+                      onTap: _openPrivacyPolicy,
                       child: Text(
                         'privacy policy',
                         style: AppTextStyles.small.copyWith(
@@ -122,5 +124,15 @@ class KycPanView extends GetView<KycController> {
         ],
       ),
     );
+  }
+
+  /// Opens the policy in the browser. There is no in-app privacy screen, and
+  /// the route constant for one is not registered — routing to it silently
+  /// did nothing, on a consent notice where the link is load-bearing.
+  Future<void> _openPrivacyPolicy() async {
+    final uri = Uri.parse(BrandConfig.privacyPolicyUrl);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      AppToast.error('Could not open the privacy policy');
+    }
   }
 }

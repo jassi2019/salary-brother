@@ -1,6 +1,12 @@
 import 'package:get/get.dart';
 
 import '../models/loan_quote.dart';
+import '../services/api/api_endpoints.dart';
+import '../services/api/api_events.dart';
+import '../services/api_service.dart';
+import '../services/journey_service.dart';
+import '../utils/app_strings.dart';
+import '../widgets/app_toast.dart';
 
 /// Drives the amount + tenure calculator on the Apply screen.
 /// The maths lives in [LoanQuote] so it can be unit-tested on its own.
@@ -9,6 +15,8 @@ class LoanController extends GetxController {
       : pricing = pricing.obs;
 
   final Rx<LoanPricing> pricing;
+
+  final isSubmitting = false.obs;
 
   late final RxInt amount = pricing.value.minAmount.obs;
   late final RxInt days = pricing.value.tenureOptions.first.obs;
@@ -73,5 +81,43 @@ class LoanController extends GetxController {
     final p = pricing.value;
     final stepped = (value / p.stepAmount).round() * p.stepAmount;
     return stepped.clamp(p.minAmount, p.maxAmount);
+  }
+
+  /// Sends the chosen amount and tenure to the CRM and follows it to whatever
+  /// it says comes next.
+  ///
+  /// This posts to `saveleadDetails`, not `saveCustomerProfile` — the loan
+  /// quote and its decision belong to the lead, not the customer profile.
+  Future<void> submit() async {
+    final profileId = await JourneyService.requireProfileId();
+    if (profileId == null) return;
+
+    final chosen = quote;
+
+    isSubmitting.value = true;
+    final result = await ApiService.instance.post(
+      ApiEndpoints.saveLeadDetails,
+      event: ApiEvents.loanQuotationDecision,
+      body: {
+        'profile_id': profileId,
+        'amount': chosen.amount,
+        'tenure': chosen.days,
+        // 1 = the customer accepted this quote.
+        'accepted_id': 1,
+      },
+    );
+    isSubmitting.value = false;
+
+    if (await JourneyService.handleRedirect(result)) return;
+
+    if (!result.isSuccess) {
+      AppToast.error(result.error ?? AppStrings.somethingWentWrong);
+      return;
+    }
+
+    await JourneyService.rememberStep(result.data);
+    if (result.message != null) AppToast.success(result.message!);
+
+    JourneyService.goToStep(result.data?['next_step']?.toString());
   }
 }

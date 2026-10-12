@@ -193,11 +193,14 @@ class ProfileController extends GetxController {
     required String event,
     required Map<String, dynamic> body,
   }) async {
+    final profileId = await JourneyService.requireProfileId();
+    if (profileId == null) return;
+
     isSubmitting.value = true;
     final result = await ApiService.instance.post(
       ApiEndpoints.saveCustomerProfile,
       event: event,
-      body: {'profile_id': StorageService.profileId ?? '', ...body},
+      body: {'profile_id': profileId, ...body},
     );
     isSubmitting.value = false;
 

@@ -51,12 +51,15 @@ class KycController extends GetxController {
       return;
     }
 
+    final profileId = await JourneyService.requireProfileId();
+    if (profileId == null) return;
+
     isSubmitting.value = true;
     final result = await ApiService.instance.post(
       ApiEndpoints.saveCustomerProfile,
       event: ApiEvents.pancard,
       body: {
-        'profile_id': StorageService.profileId ?? '',
+        'profile_id': profileId,
         'pancard': pan,
         'monthly_income': income,
       },

@@ -4,6 +4,7 @@ import '../routes/app_pages.dart';
 import '../routes/route_names.dart';
 import 'api/api_events.dart';
 import 'api/api_result.dart';
+import '../widgets/app_toast.dart';
 import 'storage_service.dart';
 
 /// Server-driven navigation.
@@ -64,15 +65,22 @@ class JourneyService {
       return;
     }
 
-    if (route == RouteNames.documents) {
-      Get.offAllNamed(
-        route,
-        arguments: {'isSelfie': event == ApiEvents.selfieUpload},
-      );
-      return;
-    }
+    // A binding that throws would otherwise take the navigation down with it
+    // and strand the customer on the screen they just finished. The dashboard
+    // is always reachable, so fall back to it rather than going nowhere.
+    try {
+      if (route == RouteNames.documents) {
+        Get.offAllNamed(
+          route,
+          arguments: {'isSelfie': event == ApiEvents.selfieUpload},
+        );
+        return;
+      }
 
-    Get.offAllNamed(route);
+      Get.offAllNamed(route);
+    } catch (_) {
+      Get.offAllNamed(RouteNames.dashboard);
+    }
   }
 
   /// Whether [route] has a page registered for it.
@@ -128,5 +136,20 @@ class JourneyService {
   static Future<void> logout() async {
     await StorageService.clearSession();
     Get.offAllNamed(RouteNames.login);
+  }
+
+  /// The profile id, or null when the session has lost it.
+  ///
+  /// Every post-OTP call needs it. Sending an empty string instead makes the
+  /// CRM reject the request and the customer sees a generic error with no
+  /// hint that their session is the problem — so callers use this and log out
+  /// cleanly when it is missing.
+  static Future<String?> requireProfileId() async {
+    final id = StorageService.profileId;
+    if (id != null && id.isNotEmpty) return id;
+
+    AppToast.error('Your session has expired. Please log in again.');
+    await logout();
+    return null;
   }
 }

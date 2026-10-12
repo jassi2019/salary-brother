@@ -68,9 +68,12 @@ class ApplyAmountView extends GetView<LoanController> {
                 AppSizes.screenPadding,
                 24,
               ),
-              child: PrimaryButton(
-                label: 'Continue',
-                onPressed: () => Get.toNamed(RouteNames.kycPan),
+              child: Obx(
+                () => PrimaryButton(
+                  label: 'Continue',
+                  isLoading: controller.isSubmitting.value,
+                  onPressed: controller.submit,
+                ),
               ),
             ),
           ],

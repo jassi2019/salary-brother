@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../controllers/dashboard_controller.dart';
 import '../routes/route_names.dart';
+import '../services/journey_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_sizes.dart';
 import '../utils/app_text_styles.dart';
@@ -83,8 +84,9 @@ class _Greeting extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   user?.name ?? 'Welcome',
-                  style: AppTextStyles.h3,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.h3,
                 ),
               ],
             ),
@@ -128,11 +130,15 @@ class _LimitCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Your pre-approved limit',
-                  style: AppTextStyles.caption.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.onPrimaryMuted,
+                Expanded(
+                  child: Text(
+                    'Your pre-approved limit',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.caption.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.onPrimaryMuted,
+                    ),
                   ),
                 ),
                 if (limit > 0)
@@ -154,9 +160,14 @@ class _LimitCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppSizes.xs),
-            Text(
-              limit > 0 ? Formatters.rupees(limit) : '—',
-              style: AppTextStyles.amountHero,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                limit > 0 ? Formatters.rupees(limit) : '—',
+                maxLines: 1,
+                style: AppTextStyles.amountHero,
+              ),
             ),
             const SizedBox(height: AppSizes.xs),
             Text(
@@ -224,8 +235,15 @@ class _ProfileProgressCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Finish your profile',
-                    style: AppTextStyles.sectionTitle),
+                const Expanded(
+                  child: Text(
+                    'Finish your profile',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.sectionTitle,
+                  ),
+                ),
+                const SizedBox(width: AppSizes.s),
                 Text(
                   '$done of ${DashboardController.totalSteps} done',
                   style: const TextStyle(
@@ -264,58 +282,73 @@ class _ProfileProgressCard extends StatelessWidget {
   }
 
   Widget _nextStepTile() {
+    final controller = Get.find<DashboardController>();
+    final step = controller.nextStep;
+    final enabled = step.route != null;
+
     return Material(
       color: AppColors.surface,
       borderRadius: BorderRadius.circular(AppSizes.radiusField),
       child: InkWell(
         borderRadius: BorderRadius.circular(AppSizes.radiusField),
-        onTap: () => Get.toNamed(RouteNames.kycPan),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSizes.m),
-          child: Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(13),
-                  border: Border.all(color: AppColors.borderSoft),
+        // Null when the screen for this step is not built yet, which dims the
+        // tile instead of letting it look tappable and do nothing.
+        onTap: enabled ? () => Get.toNamed(step.route!) : null,
+        child: Opacity(
+          opacity: enabled ? 1 : 0.55,
+          child: Padding(
+            padding: const EdgeInsets.all(AppSizes.m),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(13),
+                    border: Border.all(color: AppColors.borderSoft),
+                  ),
+                  child: const Icon(
+                    Icons.task_alt_rounded,
+                    size: 22,
+                    color: AppColors.primary,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.fingerprint_rounded,
-                  size: 22,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(width: AppSizes.m),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Next: Aadhaar e-KYC',
-                      style: TextStyle(
-                        fontFamily: AppTextStyles.fontBody,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.ink,
+                const SizedBox(width: AppSizes.m),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Next: ${step.title}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: AppTextStyles.fontBody,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.ink,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Paperless, via DigiLocker',
-                      style: AppTextStyles.small,
-                    ),
-                  ],
+                      const SizedBox(height: 2),
+                      Text(
+                        step.subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.small,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                size: 20,
-                color: AppColors.primary,
-              ),
-            ],
+                if (enabled)
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    size: 20,
+                    color: AppColors.primary,
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -329,6 +362,9 @@ class _QuickActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Repay and History have no screens yet. They stay on the grid so the
+    // layout matches the design, but _QuickAction dims anything whose route
+    // is not registered rather than letting it look tappable.
     final actions = <(IconData, String, String?)>[
       (Icons.calculate_outlined, 'Calculator', RouteNames.applyAmount),
       (Icons.replay_rounded, 'Repay', RouteNames.repay),
@@ -364,14 +400,20 @@ class _QuickAction extends StatelessWidget {
   final String label;
   final String? route;
 
+  /// False when there is no screen behind this tile, so it is drawn dimmed
+  /// and does not respond — an enabled control that does nothing reads as a
+  /// broken app.
+  bool get _enabled => route != null && JourneyService.isRegistered(route!);
+
   @override
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: label,
+      label: _enabled ? label : '$label, coming soon',
+      enabled: _enabled,
       child: InkWell(
         borderRadius: BorderRadius.circular(AppSizes.radiusCardSmall),
-        onTap: route == null ? null : () => Get.toNamed(route!),
+        onTap: _enabled ? () => Get.toNamed(route!) : null,
         // stretch, or the Column hands the tile a loose width and it shrinks
         // to the icon — at which point the 18px radius exceeds half the width
         // and the box renders as a tall capsule instead of a rounded square.
@@ -386,7 +428,11 @@ class _QuickAction extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppSizes.radiusCardSmall),
                 border: Border.all(color: AppColors.borderSoft),
               ),
-              child: Icon(icon, size: 24, color: AppColors.primary),
+              child: Icon(
+                icon,
+                size: 24,
+                color: _enabled ? AppColors.primary : AppColors.disabled,
+              ),
             ),
             const SizedBox(height: AppSizes.s),
             Text(
@@ -394,11 +440,11 @@ class _QuickAction extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: AppTextStyles.fontBody,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: AppColors.ink,
+                color: _enabled ? AppColors.ink : AppColors.mutedLight,
               ),
             ),
           ],
