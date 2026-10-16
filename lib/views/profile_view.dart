@@ -12,6 +12,7 @@ import '../utils/app_text_styles.dart';
 import '../utils/brand_config.dart';
 import '../utils/formatters.dart';
 import '../widgets/app_card.dart';
+import '../widgets/avatar.dart';
 import '../widgets/square_icon_button.dart';
 
 /// Screen 09 — the customer's own details, the legal links, and logout.
@@ -66,24 +67,7 @@ class ProfileView extends GetView<DashboardController> {
 
       return Row(
         children: [
-          Container(
-            width: 56,
-            height: 56,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AppColors.tint,
-              borderRadius: BorderRadius.circular(AppSizes.radiusCardSmall),
-            ),
-            child: Text(
-              user?.initials ?? 'SB',
-              style: const TextStyle(
-                fontFamily: AppTextStyles.fontHeading,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primary,
-              ),
-            ),
-          ),
+          Avatar(user: user, size: 56, fontSize: 18),
           const SizedBox(width: AppSizes.l),
           Expanded(
             child: Column(

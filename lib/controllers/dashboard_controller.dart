@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../models/loan_quote.dart';
 import '../models/user_model.dart';
 import '../services/api/api_endpoints.dart';
 import '../services/api/api_events.dart';
@@ -41,25 +42,36 @@ class DashboardController extends GetxController {
     await JourneyService.rememberStep(result.data);
 
     final data = result.data;
-    if (data != null && data.isNotEmpty) {
-      user.value = UserModel.fromJson(data);
+    if (data == null || data.isEmpty) {
+      // A success with nothing in it means the parse found nothing to read,
+      // which would otherwise leave stale data on screen with no error.
+      errorMessage.value = 'Could not load your details. Pull to refresh.';
+      return;
     }
+
+    final parsed = UserModel.fromJson(data);
+    user.value = parsed;
+
+    // The CRM's own next_event_name is more current than the step we stored
+    // from the last write.
+    final next = parsed.nextEvent;
+    if (next != null && next.isNotEmpty) {
+      await StorageService.setStepStage(next);
+    }
+
+    await loadLimit();
   }
 
-  /// Steps shown in the "Finish your profile" card.
-  int get completedSteps => switch (user.value?.stage) {
-        null => 0,
-        KycStage.mobileVerified => 1,
-        KycStage.personalDetails => 2,
-        KycStage.panVerified => 3,
-        KycStage.aadhaarVerified => 3,
-        KycStage.bankLinked => 4,
-        KycStage.complete => 4,
-      };
+  /// How far along the application is, 0-100, as the CRM computes it.
+  int get progressPercent => user.value?.progressPercent ?? 0;
+
+  /// The progress bar's filled segments, out of [totalSteps].
+  int get completedSteps =>
+      (progressPercent / 100 * totalSteps).floor().clamp(0, totalSteps);
 
   static const int totalSteps = 4;
 
-  bool get isProfileComplete => user.value?.isKycComplete ?? false;
+  bool get isProfileComplete => user.value?.isComplete ?? false;
 
   Future<void> logout() async {
     await StorageService.clearSession();
@@ -100,4 +112,41 @@ class DashboardController extends GetxController {
 
     return (title: title, subtitle: subtitle, route: usable ? route : null);
   }
+
+  /// The sanctioned limit, once the CRM has issued a quote.
+  ///
+  /// It does NOT come from `getDashboardData` — it is the answer to a
+  /// separate `generate_loan_quote` post, so the dashboard asks for it only
+  /// once registration is complete. Null means no quote yet, which is a
+  /// different thing from a limit of zero.
+  final limit = Rxn<LoanPricing>();
+
+  final isLoadingLimit = false.obs;
+
+  /// Asks the CRM for the customer's quote. Safe to call when it is not due:
+  /// it returns without posting.
+  Future<void> loadLimit() async {
+    final profile = user.value;
+    if (profile == null || !profile.isRegistered) return;
+
+    final profileId = StorageService.profileId ?? '';
+    if (profileId.isEmpty) return;
+
+    isLoadingLimit.value = true;
+    final result = await ApiService.instance.post(
+      ApiEndpoints.saveLeadDetails,
+      event: ApiEvents.generateLoanQuote,
+      body: {'profile_id': profileId},
+    );
+    isLoadingLimit.value = false;
+
+    // A quote that is not ready is not an error worth showing: the dashboard
+    // simply has no limit to display yet.
+    if (!result.isSuccess || result.data == null) return;
+
+    limit.value = LoanPricing.fromJson(result.data!);
+  }
+
+  /// True once the CRM has sanctioned an amount the customer can draw.
+  bool get hasLimit => limit.value != null;
 }

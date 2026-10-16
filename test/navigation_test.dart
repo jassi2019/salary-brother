@@ -59,7 +59,6 @@ void main() {
       const unbuilt = {
         RouteNames.employmentDetails,
         RouteNames.bankDetails,
-        RouteNames.documents,
         RouteNames.review,
         RouteNames.success,
         RouteNames.repay,
@@ -116,7 +115,9 @@ void main() {
       // PAN screen, which the customer had usually finished — the CRM bounced
       // them back and the tile read as dead.
       expect(JourneyService.isRegistered(RouteNames.kycPan), isTrue);
-      expect(JourneyService.isRegistered(RouteNames.documents), isFalse);
+      expect(JourneyService.isRegistered(RouteNames.documents), isTrue);
+      // Still unbuilt, so still correctly refused.
+      expect(JourneyService.isRegistered(RouteNames.review), isFalse);
     });
   });
 

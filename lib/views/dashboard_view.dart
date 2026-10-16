@@ -9,6 +9,8 @@ import '../utils/app_sizes.dart';
 import '../utils/app_text_styles.dart';
 import '../utils/formatters.dart';
 import '../widgets/app_card.dart';
+import '../widgets/avatar.dart';
+import '../widgets/app_toast.dart';
 import '../widgets/square_icon_button.dart';
 
 /// Screen 03 of the design canvas — the home / dashboard screen.
@@ -56,24 +58,7 @@ class _Greeting extends StatelessWidget {
 
       return Row(
         children: [
-          Container(
-            width: AppSizes.touchTarget,
-            height: AppSizes.touchTarget,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AppColors.tint,
-              borderRadius: BorderRadius.circular(AppSizes.radiusOtpBox),
-            ),
-            child: Text(
-              user?.initials ?? 'SB',
-              style: const TextStyle(
-                fontFamily: AppTextStyles.fontHeading,
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primary,
-              ),
-            ),
-          ),
+          Avatar(user: user, size: AppSizes.touchTarget, fontSize: 15),
           const SizedBox(width: AppSizes.m),
           Expanded(
             child: Column(
@@ -120,7 +105,12 @@ class _LimitCard extends StatelessWidget {
     final controller = Get.find<DashboardController>();
 
     return Obx(() {
-      final limit = controller.user.value?.creditLimit ?? 0;
+      final pricing = controller.limit.value;
+      final hasLimit = pricing != null;
+      // Before the CRM issues a quote there is no limit to show, and the
+      // button continues the application instead of opening a calculator
+      // the server would refuse.
+      final nextStep = controller.nextStep;
 
       return HeroCard(
         radius: 28,
@@ -141,7 +131,7 @@ class _LimitCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (limit > 0)
+                if (hasLimit)
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
@@ -164,16 +154,18 @@ class _LimitCard extends StatelessWidget {
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
               child: Text(
-                limit > 0 ? Formatters.rupees(limit) : '—',
+                hasLimit ? Formatters.rupees(pricing.maxAmount) : '—',
                 maxLines: 1,
                 style: AppTextStyles.amountHero,
               ),
             ),
             const SizedBox(height: AppSizes.xs),
             Text(
-              limit > 0
-                  ? 'Take any amount from ₹5,000 · Repay in 7–40 days'
-                  : 'Finish your profile to see your limit',
+              hasLimit
+                  ? 'From ${Formatters.rupees(pricing.minAmount)} · Repay in '
+                      '${pricing.tenureOptions.first}–'
+                      '${pricing.tenureOptions.last} days'
+                  : 'Finish your application to see your limit',
               style: AppTextStyles.caption.copyWith(
                 color: AppColors.onPrimaryMuted,
               ),
@@ -190,20 +182,29 @@ class _LimitCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppSizes.radiusField),
                   ),
                 ),
-                onPressed: () => Get.toNamed(RouteNames.applyAmount),
-                child: const Row(
+                onPressed: hasLimit
+                    ? () => Get.toNamed(RouteNames.applyAmount)
+                    : (nextStep.route == null
+                        ? null
+                        : () => Get.toNamed(nextStep.route!)),
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      'Get money now',
-                      style: TextStyle(
-                        fontFamily: AppTextStyles.fontBody,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
+                    Flexible(
+                      child: Text(
+                        hasLimit ? 'Get money now' : 'Continue application',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: AppTextStyles.fontBody,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
-                    SizedBox(width: AppSizes.s),
-                    Icon(Icons.arrow_forward_rounded, size: 18),
+                    const SizedBox(width: AppSizes.s),
+                    const Icon(Icons.arrow_forward_rounded, size: 18),
                   ],
                 ),
               ),
@@ -400,10 +401,15 @@ class _QuickAction extends StatelessWidget {
   final String label;
   final String? route;
 
-  /// False when there is no screen behind this tile, so it is drawn dimmed
-  /// and does not respond — an enabled control that does nothing reads as a
-  /// broken app.
-  bool get _enabled => route != null && JourneyService.isRegistered(route!);
+  /// False when there is no screen behind this tile, or when the journey has
+  /// not reached it yet. An enabled control that does nothing — or that opens
+  /// a screen the server will refuse — reads as a broken app.
+  bool get _enabled {
+    if (route == null || !JourneyService.isRegistered(route!)) return false;
+    // The calculator decides on a quote the CRM has not issued yet.
+    if (route == RouteNames.applyAmount) return JourneyService.canChooseAmount;
+    return true;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -546,6 +552,19 @@ class _BottomNav extends StatelessWidget {
     final route = _routes[index];
     if (route == null) {
       controller.tabIndex.value = 0;
+      return;
+    }
+
+    // Apply opens the amount picker, which the CRM refuses before the quote
+    // exists. Send the customer to the step they actually owe instead.
+    if (route == RouteNames.applyAmount && !JourneyService.canChooseAmount) {
+      controller.tabIndex.value = 0;
+      final next = controller.nextStep.route;
+      if (next != null) {
+        await Get.toNamed(next);
+      } else {
+        AppToast.info('Finish your application to choose an amount');
+      }
       return;
     }
 

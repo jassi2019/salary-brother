@@ -7,6 +7,7 @@ import '../bindings/loan_binding.dart';
 import '../bindings/splash_binding.dart';
 import '../views/apply_amount_view.dart';
 import '../views/dashboard_view.dart';
+import '../views/documents_view.dart';
 import '../views/income_details_view.dart';
 import '../views/kyc_pan_view.dart';
 import '../views/login_view.dart';
@@ -84,6 +85,11 @@ class AppPages {
       name: RouteNames.incomeDetails,
       page: () => const IncomeDetailsView(),
       binding: ProfileBinding(),
+    ),
+    GetPage(
+      name: RouteNames.documents,
+      page: () => const DocumentsView(),
+      binding: DocumentsBinding(),
     ),
   ];
 }

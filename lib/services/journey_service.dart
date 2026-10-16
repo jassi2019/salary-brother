@@ -152,4 +152,14 @@ class JourneyService {
     await logout();
     return null;
   }
+
+  /// Whether the customer has got far enough for the amount picker.
+  ///
+  /// The calculator is a decision on a quote the CRM has already issued, not
+  /// a browsing tool. Opening it earlier shows figures the server has not
+  /// sanctioned, and its Continue button can only fail — the CRM answers
+  /// "your registration is not completed".
+  static bool get canChooseAmount =>
+      ApiEvents.positionOf(StorageService.stepStage) >=
+      ApiEvents.positionOf(ApiEvents.loanQuotationDecision);
 }
