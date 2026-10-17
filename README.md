@@ -180,6 +180,10 @@ Two traps:
 - The hardcoded Razorpay key. Payments need build-time config, not a literal
   in the client.
 
+The exact request body for every `event_name`, including the steps not yet
+built, is in [`docs/crm-contract.md`](docs/crm-contract.md). Those field
+names are not published anywhere — a wrong key gets a generic rejection.
+
 ## The journey
 
 The CRM drives it. Each response names the next step; the app follows.
